@@ -1,0 +1,61 @@
+{
+	"name": "three-viewer",
+	"version": "1.0.0",
+	"description": "Three Viewer from NextJS",
+	"author": "Shary",
+	"private": true,
+	"homepage": "/",
+	"main": "main.js",
+	"build": {
+		"appId": "com.shary.three-viewer",
+		"productName": "Three Viewer",
+		"artifactName": "com.shary.three-viewer",
+		"copyright": "Copyright © 2024 Three Viewer",
+		"electronVersion": "33.0.2",
+		"asar": true,
+		"directories": {
+			"output": "electron",
+			"buildResources": "./"
+		},
+		"files": [
+			"!*.js.map",
+			"!*.css.map"
+		],
+		"win": {
+			"icon": "favicon.ico",
+			"target": [
+				"nsis"
+			]
+		},
+		"nsis": {
+			"allowToChangeInstallationDirectory": true,
+			"oneClick": false,
+			"menuCategory": true,
+			"allowElevation": false,
+			"perMachine": false,
+			"runAfterFinish": false,
+			"deleteAppDataOnUninstall": true,
+			"guid": "three-viewer"
+		},
+		"linux": {
+			"icon": "favicon.ico",
+			"category": "Utility",
+			"target": [
+				{
+					"target": "pacman"
+				}
+			]
+		},
+		"mac": {
+			"icon": "favicon.ico",
+			"type": "development",
+			"category": "public.app-category.developer-tools",
+			"target": [
+				"dmg"
+			]
+		}
+	},
+	"dependencies": {
+		"electron-serve": "^2.1.1"
+	}
+}

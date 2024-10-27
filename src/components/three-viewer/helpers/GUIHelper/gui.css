@@ -1,0 +1,30 @@
+#three-gui {
+	/* gui放左上角 */
+	position: fixed;
+	top: 0;
+	left: 0;
+}
+
+#three-gui input {
+	margin: 0;
+	padding: 0 3px;
+}
+
+#three-gui select {
+	color: #222;
+}
+
+#three-gui #three-gui-stats div {
+	/* stats在gui文件夹中 */
+	position: static !important;
+}
+
+#three-gui #three-gui-stats {
+	/* stats在gui中时高度自适应 */
+	height: max-content;
+}
+
+#three-gui .closed #three-gui-stats {
+	/* stats在gui中隐藏时高度为0 */
+	height: 0;
+}
