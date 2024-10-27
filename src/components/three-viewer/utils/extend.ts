@@ -3,15 +3,15 @@
  * @License MIT
  */
 
-function hasProperty(obj: any, name: string) {
+export function hasProperty(obj: any, name: string) {
 	return Object.prototype.hasOwnProperty.call(obj, name)
 }
 
-function getProperty(obj: any, name: string) {
+export function getProperty(obj: any, name: string) {
 	return name === '__proto__' && hasProperty(obj, name) ? Object.getOwnPropertyDescriptor(obj, name)?.value : obj[name]
 }
 
-function setProperty(target: any, options: any) {
+export function setProperty(target: any, options: any) {
 	if (options.name === '__proto__') {
 		Object.defineProperty(target, options.name, {
 			enumerable: true,
@@ -28,7 +28,8 @@ export function isPlainObject(obj: any) {
 	if (!obj || Object.prototype.toString.call(obj) !== '[object Object]') return false
 
 	var hasOwnConstructor = hasProperty(obj, 'constructor')
-	var hasIsPrototypeOf = obj.constructor && obj.constructor.prototype && hasProperty(obj.constructor.prototype, 'isPrototypeOf')
+	var hasIsPrototypeOf =
+		obj.constructor && obj.constructor.prototype && hasProperty(obj.constructor.prototype, 'isPrototypeOf')
 	if (obj.constructor && !hasOwnConstructor && !hasIsPrototypeOf) return false
 
 	var key

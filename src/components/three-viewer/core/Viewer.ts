@@ -1,13 +1,10 @@
 import { EventListenerQueue } from 'events-ns'
 import {
 	AmbientLight,
-	AnimationAction,
 	AnimationClip,
-	AnimationMixer,
 	Box3,
 	Cache,
 	Camera,
-	Clock,
 	Color,
 	DirectionalLight,
 	Group,
@@ -39,19 +36,20 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module'
-import { Easing, Tween } from 'three/examples/jsm/libs/tween.module'
+import { Tween } from 'three/examples/jsm/libs/tween.module'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { ThreeEnvironment, ThreeEnvironments } from '../config/Environments'
-import { AnyObject, NumberObject } from '../types'
+import { NumberObject } from '../types'
 import { assertUrl } from '../utils/detect'
 import { extend } from '../utils/extend'
-import { addMouseEventListener, areVector3Close, materialToArray } from '../utils/three'
+import { addMouseEventListener, materialToArray } from '../utils/three'
 import { ThreePlugin } from './Plugin'
 import { ThreePluginDispatcher } from './PluginDispatcher'
+import { ThreeAnimator, ThreeAnimatorOptions } from './animator'
 
 Cache.enabled = true
 
@@ -82,7 +80,6 @@ class ThreeViewer extends ThreePluginDispatcher {
 		directIntensity: 0.5
 	}
 
-	private renderClock: Clock
 	private renderTimer?: number
 	private renderCount: number = 0
 	private renderLookAt: number[][] = []
@@ -95,13 +92,11 @@ class ThreeViewer extends ThreePluginDispatcher {
 	private tween?: Tween<NumberObject>
 	private raycaster!: Raycaster
 
-	listener!: EventListenerQueue
+	listener: EventListenerQueue
+	animator: ThreeAnimator
 	options = {} as Required<ThreeViewerOptions>
 	width: number = 0
 	height: number = 0
-	clips: AnimationClip[] = []
-	actions: AnyObject<AnimationAction> = {}
-	runningActions: string[] = []
 	lights: Light[] = []
 	meshes: Mesh[] = []
 	morphs: Mesh[] = []
@@ -121,17 +116,19 @@ class ThreeViewer extends ThreePluginDispatcher {
 	objectCenter!: Vector3
 	objectSize!: Vector3
 	objectDistance: number = 0
-	mixer?: AnimationMixer
 
 	constructor(options?: ThreeViewerOptions) {
 		super()
-		this.renderClock = new Clock()
-		this.listener = new EventListenerQueue([])
+		// 设置参数
+		this.setOptions(options)
+		// 辅助类
+		this.animator = new ThreeAnimator(this.options.animator)
+		this.listener = new EventListenerQueue(this.options.listeners)
+		this.animator.initialize(this)
+		// bind事件
 		this.renderBinded = this.render.bind(this)
 		this.activateBinded = this.activate.bind(this)
 		this.inactivateBinded = this.inactivate.bind(this)
-		// 设置参数
-		this.setOptions(options)
 		// 创建DOM
 		this.createDomElement()
 		// 设置渲染
@@ -167,15 +164,15 @@ class ThreeViewer extends ThreePluginDispatcher {
 						'capture',
 						this.capture(new Vector2((event.clientX / this.width) * 2 - 1, -(event.clientY / this.height) * 2 + 1))
 					)
-				}),
-			(event: MouseEvent) => {
-				// 获取鼠标位置
-				const X = ((event.clientX / this.width) * 2 - 1) * 100
-				const Y = (-(event.clientY / this.height) * 2 + 1) * 100
-				// 将相机聚焦到这个点
-				const { x, y, z } = this.camera.position
-				this.renderLookAt.push([X + x, Y + y, z - 50])
-			}
+				})
+			// (event: MouseEvent) => {
+			// 	// 获取鼠标位置
+			// 	const X = ((event.clientX / this.width) * 2 - 1) * 100
+			// 	const Y = (-(event.clientY / this.height) * 2 + 1) * 100
+			// 	// 将相机聚焦到这个点
+			// 	const { x, y, z } = this.camera.position
+			// 	this.renderLookAt.push([X + x, Y + y, z - 50])
+			// }
 		)
 		// tab可见时渲染
 		this.listener.push(
@@ -386,7 +383,7 @@ class ThreeViewer extends ThreePluginDispatcher {
 
 		this.lights.length || this.addLights()
 
-		this.updateClips(clips)
+		this.animator.updateClips(clips)
 
 		this.dispatchPlugin('update')
 
@@ -424,20 +421,15 @@ class ThreeViewer extends ThreePluginDispatcher {
 
 	render() {
 		if (this.renderCount > 0) {
-			const lookAt = this.renderLookAt.shift()
-			lookAt && this.camera.lookAt(lookAt[0], lookAt[1], lookAt[2])
+			// const lookAt = this.renderLookAt.shift()
+			// lookAt && this.camera.lookAt(lookAt[0], lookAt[1], lookAt[2])
 
 			this.renderer.render(this.scene, this.camera)
 
-			// from created to current seconds
-			const delta = this.renderClock.getDelta()
-
-			this.mixer?.update(delta)
+			this.animator.render()
 			this.controls?.update()
 
 			this.dispatchPlugin('render')
-
-			this.tween?.update()
 		}
 
 		this.renderTimer = requestAnimationFrame(this.renderBinded)
@@ -463,7 +455,7 @@ class ThreeViewer extends ThreePluginDispatcher {
 		// 无论什么情况下都要清除定时器，否则会掉帧
 		clearTimeout(this.lockRenderTimer)
 		// 有动画运行时不自动禁用
-		if (this.runningActions.length > 0) return
+		if (this.animator.runningActions.length > 0) return
 		const { renderLifeTime = 1 } = this.options
 		this.lockRenderTimer = setTimeout(this.inactivateBinded, renderLifeTime * 1000)
 	}
@@ -563,146 +555,6 @@ class ThreeViewer extends ThreePluginDispatcher {
 		}
 	}
 	//#endregion Plugin
-
-	//#region Animate
-	animate(toPosition: Vector3, toUp: Vector3) {
-		if (!this.object) return
-
-		const { position, up } = this.camera
-		const { target } = this.controls
-
-		// lookAt center
-		const toTarget = this.objectCenter.normalize()
-
-		// calculate new position and keep distance
-		toPosition.subVectors(toTarget, toPosition.setLength(this.objectDistance))
-
-		// position and up same then return
-		if (areVector3Close(position, toPosition) && areVector3Close(up, toUp)) return
-
-		this.controls.enabled = false
-
-		const _this = this
-
-		toUp.normalize()
-
-		this.tween = new Tween({
-			x1: position.x,
-			y1: position.y,
-			z1: position.z,
-			x2: up.x,
-			y2: up.y,
-			z2: up.z,
-			x3: target.x,
-			y3: target.y,
-			z3: target.z
-		})
-
-		this.tween.to(
-			{
-				x1: toPosition.x,
-				y1: toPosition.y,
-				z1: toPosition.z,
-				x2: toUp.x,
-				y2: toUp.y,
-				z2: toUp.z,
-				x3: toTarget.x,
-				y3: toTarget.y,
-				z3: toTarget.z
-			},
-			1000
-		)
-
-		this.tween.easing(Easing.Sinusoidal.InOut)
-
-		this.tween.onUpdate(function (p) {
-			position.x = p.x1
-			position.y = p.y1
-			position.z = p.z1
-			up.x = p.x2
-			up.y = p.y2
-			up.z = p.z2
-			target.x = p.x3
-			target.y = p.y3
-			target.z = p.z3
-			_this.camera.updateMatrixWorld()
-		})
-
-		this.tween.onComplete(function () {
-			_this.controls.enabled = true
-		})
-
-		this.tween.start()
-	}
-
-	updateClips(clips: AnimationClip[]) {
-		if (this.object) {
-			this.removeClips()
-			this.clips = clips
-			this.actions = {}
-			this.runningActions = []
-			if (clips.length == 0) {
-				this.mixer = undefined
-			} else {
-				this.mixer = new AnimationMixer(this.object)
-				// play idle animate
-				for (const clip of clips) {
-					if (clip.name === 'Idle') {
-						this.playClip(clip)
-					}
-					this.actions[clip.name] = this.mixer.clipAction(clip)
-				}
-			}
-		}
-	}
-
-	playClip(name: string | AnimationClip) {
-		if (this.mixer) {
-			const clip = typeof name === 'string' ? this.clips.find((clip) => clip.name === name) : name
-			if (clip) {
-				this.mixer.clipAction(clip).reset().play()
-				this.runningActions.push(clip.name)
-				this.activate()
-			}
-		}
-	}
-
-	pauseClip(name: string | AnimationClip) {
-		if (this.mixer) {
-			const clip = typeof name === 'string' ? this.clips.find((clip) => clip.name === name) : name
-			if (clip) {
-				this.mixer.clipAction(clip).reset().stop()
-				this.runningActions.splice(this.runningActions.indexOf(clip.name), 1)
-				this.runningActions.length || this.activate()
-			}
-		}
-	}
-
-	playAllClips() {
-		if (this.mixer) {
-			this.runningActions = this.clips.map((clip) => (this.mixer?.clipAction(clip).reset().play(), clip.name))
-			this.activate()
-		}
-	}
-
-	pauseAllClips() {
-		if (this.mixer) {
-			this.mixer.stopAllAction()
-			this.runningActions = []
-			this.activate()
-		}
-	}
-
-	removeClips() {
-		if (this.mixer) {
-			this.mixer.stopAllAction().uncacheRoot(this.mixer.getRoot())
-			this.clips = []
-			this.actions = {}
-			this.runningActions = []
-			this.mixer = undefined
-		}
-	}
-	//#endregion Animate
 
 	//#region Lights
 	private addLights() {
@@ -821,8 +673,12 @@ export interface ThreeViewerOptions {
 	outputColorSpace?: 'sRGB' | 'Linear'
 	// 插件
 	plugins?: ThreePlugin[]
+	// 事件
+	listeners?: (() => void)[]
+	// 动画参数
+	animator?: ThreeAnimatorOptions
 	// 初始定位，默认居中
-	position?: []
+	position?: number[]
 	near?: number
 	// 渲染范围
 	far?: number

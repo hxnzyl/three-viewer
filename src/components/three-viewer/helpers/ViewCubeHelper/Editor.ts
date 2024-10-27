@@ -1,9 +1,10 @@
-import { Raycaster, Vector2, Vector3 } from 'three'
+import { Raycaster, Vector2 } from 'three'
+import { ThreeRotateAnimate } from '../../animates/Rotate'
+import { ThreeRotateIdAnimate } from '../../animates/Rotate/Map'
 import { ThreeViewer } from '../../core/Viewer'
 import { addMouseEventListener } from '../../utils/three'
 import { ThreeViewCubeDataHelper } from './Data'
 import { ThreeViewCubeDirectionMap } from './data/DirectionMap'
-import { ThreeViewCubeRotateToMap } from './data/RotateToMap'
 import { ThreeViewCubeRenderHelper } from './Render'
 
 class ThreeViewCubeEditorHelper {
@@ -13,6 +14,7 @@ class ThreeViewCubeEditorHelper {
 	private viewer: ThreeViewer
 	private raycaster: Raycaster
 	private componentId: string = ''
+	private rotateId?: ThreeRotateIdAnimate
 
 	constructor(
 		domElement: HTMLElement,
@@ -35,8 +37,8 @@ class ThreeViewCubeEditorHelper {
 						this.cubeData.getComponent(this.componentId)?.cancelHighlight()
 						this.componentId = ''
 					}
-					const rotate = ThreeViewCubeRotateToMap[ThreeViewCubeDirectionMap[componentId]]
-					this.viewer.animate(new Vector3(...rotate[0]), new Vector3(...rotate[1]))
+
+					this.reconcileAnimate(componentId)
 				}
 			},
 			(event: MouseEvent) => {
@@ -53,6 +55,17 @@ class ThreeViewCubeEditorHelper {
 				}
 			}
 		)
+	}
+
+	reconcileAnimate(componentId: string) {
+		const toRotateId = ThreeViewCubeDirectionMap[componentId]
+		this.viewer.animator.animate(
+			new ThreeRotateAnimate({
+				fromRotateId: this.rotateId,
+				toRotateId
+			})
+		)
+		this.rotateId = toRotateId
 	}
 
 	canvasToNormalized(x: number, y: number) {

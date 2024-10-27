@@ -252,7 +252,8 @@ class ThreeGUIHelper extends ThreePlugin {
 		this.animCtrls = []
 
 		const three = this.viewer
-		const { mixer, clips, runningActions } = three
+		const { animator } = three
+		const { mixer, clips, runningActions } = animator
 		if (!mixer || clips.length == 0) {
 			this.animationsFolder.hide()
 		} else {
@@ -270,7 +271,7 @@ class ThreeGUIHelper extends ThreePlugin {
 					for (let ctrl of ctrls) {
 						ctrl.setValue(value)
 					}
-					value ? three.playAllClips() : three.pauseAllClips()
+					value ? animator.playAllClips() : animator.pauseAllClips()
 					lock = false
 				})
 			)
@@ -281,8 +282,8 @@ class ThreeGUIHelper extends ThreePlugin {
 					this.animationsFolder.add(status, clip.name).onChange((value) => {
 						if (lock) return
 						lock = true
-						value ? three.playClip(clip) : three.pauseClip(clip)
-						this.animCtrls[1].setValue(three.runningActions.length == clips.length)
+						value ? animator.playClip(clip) : animator.pauseClip(clip)
+						this.animCtrls[1].setValue(runningActions.length == clips.length)
 						lock = false
 					})
 				)

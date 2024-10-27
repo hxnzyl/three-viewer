@@ -1,4 +1,4 @@
-export const ThreeViewCubeRotateToMap: { [key: string]: number[][] } = {
+export const ThreeRotateAnimateMap: { [key in ThreeRotateIdAnimate]: number[][] } = {
 	Top: [
 		[0, -1, 0],
 		[0, 0, -1]
@@ -176,3 +176,49 @@ export const ThreeViewCubeRotateToMap: { [key: string]: number[][] } = {
 		[0, 0, -1]
 	]
 }
+
+export type ThreeRotateIdAnimate =
+	| 'Top'
+	| 'Bottom'
+	| 'Front'
+	| 'Back'
+	| 'Right'
+	| 'Left'
+	| 'SouthEast'
+	| 'SouthWest'
+	| 'NorthWest'
+	| 'NorthEast'
+	| 'BottomFront'
+	| 'BottomBack'
+	| 'BottomRight'
+	| 'BottomLeft'
+	| 'BottomSouthEast'
+	| 'BottomSouthWest'
+	| 'BottomNorthWest'
+	| 'BottomNorthEast'
+	| 'RoofFront'
+	| 'RoofBack'
+	| 'RoofRight'
+	| 'RoofLeft'
+	| 'RoofSouthEast'
+	| 'RoofSouthWest'
+	| 'RoofNorthWest'
+	| 'RoofNorthEast'
+	| 'TopTurnRight'
+	| 'TopTurnBack'
+	| 'TopTurnLeft'
+	| 'BottomTurnRight'
+	| 'BottomTurnBack'
+	| 'BottomTurnLeft'
+	| 'FrontTurnTop'
+	| 'FrontTurnLeft'
+	| 'FrontTurnRight'
+	| 'RightTurnTop'
+	| 'RightTurnFront'
+	| 'RightTurnBack'
+	| 'BackTurnTop'
+	| 'BackTurnLeft'
+	| 'BackTurnRight'
+	| 'LeftTurnTop'
+	| 'LeftTurnBack'
+	| 'LeftTurnFront'

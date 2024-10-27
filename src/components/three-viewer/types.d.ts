@@ -17,5 +17,5 @@ export type BooleanObject<K = any> = AnyObject<boolean, K>
 export type DataAnyObject<K = any> = AnyObject<{ data: any }, K>
 
 export type MethodNames<T> = {
-	[K in keyof T]: T[K] extends (...args: any[]) => any ? K : never
+	[K in keyof T]: T[K] extends Function ? K : never
 }[keyof T]
