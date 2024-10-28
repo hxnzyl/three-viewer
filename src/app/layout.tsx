@@ -2,9 +2,10 @@
 
 import '@/assets/globals.css'
 import LayoutDefault from '@/components/layout/default'
-import { AppContext, Theme } from '@/context/app'
+import { AppContext } from '@/context/app'
 import localStorage from '@/lib/localStorage'
 import { cn } from '@/lib/utils'
+import { Theme } from '@/types/app'
 import localFont from 'next/font/local'
 import { useEffect, useState } from 'react'
 

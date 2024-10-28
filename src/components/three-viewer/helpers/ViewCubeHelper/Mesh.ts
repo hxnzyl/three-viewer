@@ -3,11 +3,7 @@ import { Line2 } from 'three/examples/jsm/lines/Line2'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { ThreeViewCubeHelperColors } from '.'
-import {
-	getBufferAttributeIndexFromVector3sArray,
-	getBufferAttributePositionFromVector3sArray,
-	vector3sToArray
-} from '../../utils/three'
+import ThreeVectorUtils from '../../utils/Vector'
 
 abstract class ThreeViewCubeMeshHelper {
 	colors!: Required<ThreeViewCubeHelperColors>
@@ -22,8 +18,8 @@ abstract class ThreeViewCubeMeshHelper {
 				opacity: this.colors.faceDefaultOpacity,
 				side: DoubleSide
 			})
-		geometry.setAttribute('position', getBufferAttributePositionFromVector3sArray(vectors))
-		geometry.setIndex(getBufferAttributeIndexFromVector3sArray(vectors))
+		geometry.setAttribute('position', ThreeVectorUtils.createBufferAttribute3(vectors))
+		geometry.setIndex(ThreeVectorUtils.createBufferAttributeIndex(vectors))
 		const mesh = new Mesh<BufferGeometry, MeshBasicMaterial>(geometry, material)
 		// @ts-ignore
 		mesh.componentId = this.componentId
@@ -32,7 +28,7 @@ abstract class ThreeViewCubeMeshHelper {
 
 	createWireframe(vectors: Vector3[]) {
 		const lineGeometry = new LineGeometry()
-		lineGeometry.setPositions(vector3sToArray(vectors))
+		lineGeometry.setPositions(ThreeVectorUtils.vector3sToArray(vectors))
 
 		const lineMaterial = new LineMaterial({
 			color: this.colors.wireframeDefaultColor,

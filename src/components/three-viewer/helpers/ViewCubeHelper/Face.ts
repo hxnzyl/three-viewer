@@ -1,10 +1,6 @@
 import { Box3, BufferGeometry, DoubleSide, Mesh, MeshBasicMaterial, Texture, Vector2, Vector3 } from 'three'
 import { ThreeViewCubeHelperColors } from '.'
-import {
-	getBufferAttributeIndexFromVector3sArray,
-	getBufferAttributePositionFromVector3sArray,
-	getBufferAttributeUvFromVector2sArray
-} from '../../utils/three'
+import ThreeVectorUtils from '../../utils/Vector'
 import { ThreeViewCubeMeshHelper } from './Mesh'
 
 class ThreeViewCubeFaceHelper extends ThreeViewCubeMeshHelper {
@@ -112,9 +108,9 @@ class ThreeViewCubeFaceHelper extends ThreeViewCubeMeshHelper {
 		const geometry = new BufferGeometry(),
 			material = new MeshBasicMaterial({ map: this.texture, side: DoubleSide, transparent: false })
 
-		geometry.setAttribute('position', getBufferAttributePositionFromVector3sArray(vectors))
-		geometry.setAttribute('uv', getBufferAttributeUvFromVector2sArray(this.vertexUvs))
-		geometry.setIndex(getBufferAttributeIndexFromVector3sArray(vectors))
+		geometry.setAttribute('position', ThreeVectorUtils.createBufferAttribute3(vectors))
+		geometry.setAttribute('uv', ThreeVectorUtils.createBufferAttribute2(this.vertexUvs))
+		geometry.setIndex(ThreeVectorUtils.createBufferAttributeIndex(vectors))
 
 		this.mesh = new Mesh<BufferGeometry, MeshBasicMaterial>(geometry, material)
 		// @ts-ignore

@@ -1,8 +1,8 @@
 import { EventDispatcher } from 'three'
-import { DataAnyObject, MethodNames } from '../types'
+import { EventDispatcherObject, MethodNames } from '../types'
 import { ThreePlugin, ThreePlugins } from './Plugin'
 
-class ThreePluginDispatcher extends EventDispatcher<DataAnyObject> {
+class ThreePluginDispatcher extends EventDispatcher<EventDispatcherObject> {
 	private plugins: ThreePlugins = {}
 
 	getPlugin(name: string) {

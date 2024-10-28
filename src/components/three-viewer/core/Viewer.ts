@@ -43,13 +43,14 @@ import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { ThreeEnvironment, ThreeEnvironments } from '../config/Environments'
-import { NumberObject } from '../types'
+import { EventsObject, NumberObject } from '../types'
+import ThreeEventUtils from '../utils/Event'
+import ThreeMaterialUtils from '../utils/Material'
 import { assertUrl } from '../utils/detect'
 import { extend } from '../utils/extend'
-import { addMouseEventListener, materialToArray } from '../utils/three'
+import { ThreeAnimator, ThreeAnimatorOptions } from './Animator'
 import { ThreePlugin } from './Plugin'
 import { ThreePluginDispatcher } from './PluginDispatcher'
-import { ThreeAnimator, ThreeAnimatorOptions } from './animator'
 
 Cache.enabled = true
 
@@ -61,7 +62,7 @@ class ThreeViewer extends ThreePluginDispatcher {
 		height: '',
 		kiosk: false,
 		// 渲染的生命周期(秒)
-		renderLifeTime: 3,
+		lifeTime: 3,
 		textureColorSpace: 'sRGB',
 		outputColorSpace: 'sRGB',
 		// 插件
@@ -81,14 +82,14 @@ class ThreeViewer extends ThreePluginDispatcher {
 	}
 
 	private renderTimer?: number
-	private renderCount: number = 0
 	private renderLookAt: number[][] = []
-	private lockRenderTimer?: NodeJS.Timeout
+	private inactivateTimer?: NodeJS.Timeout
 
 	private renderBinded: () => void
 	private activateBinded: () => void
 	private inactivateBinded: () => void
 
+	private activated: boolean = false
 	private tween?: Tween<NumberObject>
 	private raycaster!: Raycaster
 
@@ -123,7 +124,7 @@ class ThreeViewer extends ThreePluginDispatcher {
 		this.setOptions(options)
 		// 辅助类
 		this.animator = new ThreeAnimator(this.options.animator)
-		this.listener = new EventListenerQueue(this.options.listeners)
+		this.listener = new EventListenerQueue([])
 		this.animator.initialize(this)
 		// bind事件
 		this.renderBinded = this.render.bind(this)
@@ -154,26 +155,27 @@ class ThreeViewer extends ThreePluginDispatcher {
 	}
 
 	private setEvent() {
-		// 点击模型捕获
-		addMouseEventListener(
-			this,
-			this.domElement,
-			this.hasPlugin('Effects.Selected') &&
-				((event: MouseEvent) => {
+		if (this.hasPlugin('Effects.Selected')) {
+			ThreeEventUtils.addMouseEventListener({
+				viewer: this,
+				dom: this.domElement,
+				// 点击模型捕获
+				click: (event: MouseEvent) => {
 					this.dispatchPlugin(
 						'capture',
 						this.capture(new Vector2((event.clientX / this.width) * 2 - 1, -(event.clientY / this.height) * 2 + 1))
 					)
-				})
-			// (event: MouseEvent) => {
-			// 	// 获取鼠标位置
-			// 	const X = ((event.clientX / this.width) * 2 - 1) * 100
-			// 	const Y = (-(event.clientY / this.height) * 2 + 1) * 100
-			// 	// 将相机聚焦到这个点
-			// 	const { x, y, z } = this.camera.position
-			// 	this.renderLookAt.push([X + x, Y + y, z - 50])
-			// }
-		)
+				}
+				// move: (event: MouseEvent) => {
+				// 	// 获取鼠标位置
+				// 	const X = ((event.clientX / this.width) * 2 - 1) * 100
+				// 	const Y = (-(event.clientY / this.height) * 2 + 1) * 100
+				// 	// 将相机聚焦到这个点
+				// 	const { x, y, z } = this.camera.position
+				// 	this.renderLookAt.push([X + x, Y + y, z - 50])
+				// }
+			})
+		}
 		// tab可见时渲染
 		this.listener.push(
 			document,
@@ -196,14 +198,22 @@ class ThreeViewer extends ThreePluginDispatcher {
 
 				this.activate()
 
-				this.camera.aspect = this.width / this.height
-				this.camera.updateProjectionMatrix()
+				if (this.camera instanceof PerspectiveCamera) {
+					this.camera.aspect = this.width / this.height
+					this.camera.updateProjectionMatrix()
+				}
+
 				this.renderer.setSize(this.width, this.height)
 
 				this.dispatchPlugin('onResize')
 			},
 			false
 		)
+		// 添加参数中的事件
+		const { events } = this.options
+		for (const type in events) {
+			this.addEventListener(type, events[type])
+		}
 	}
 
 	//#region Render
@@ -227,8 +237,6 @@ class ThreeViewer extends ThreePluginDispatcher {
 	}
 
 	private setRender() {
-		this.renderCount = 0
-
 		this.renderer = new WebGLRenderer({
 			//canvas是否包含alpha (透明度)。默认为 false
 			alpha: true,
@@ -246,7 +254,7 @@ class ThreeViewer extends ThreePluginDispatcher {
 
 		this.updateOutputColorSpace(this.options.outputColorSpace)
 
-		this.renderer.setClearColor(0xffffff, 1)
+		// this.renderer.setClearColor(0xffffff, 1)
 		this.renderer.setPixelRatio(window.devicePixelRatio)
 		this.renderer.setSize(this.width, this.height)
 
@@ -274,8 +282,8 @@ class ThreeViewer extends ThreePluginDispatcher {
 			? new OBJLoader()
 			: new GLTFLoader()
 					.setCrossOrigin('anonymous')
-					.setDRACOLoader(new DRACOLoader().setDecoderPath('wasm/'))
-					.setKTX2Loader(new KTX2Loader().setTranscoderPath('wasm/').detectSupport(this.renderer))
+					.setDRACOLoader(new DRACOLoader().setDecoderPath('/three-viewer/wasm/'))
+					.setKTX2Loader(new KTX2Loader().setTranscoderPath('/three-viewer/wasm/').detectSupport(this.renderer))
 					.setMeshoptDecoder(MeshoptDecoder)
 
 		loader.load(
@@ -358,7 +366,7 @@ class ThreeViewer extends ThreePluginDispatcher {
 				this.meshes.push(mesh)
 
 				// 网格材料
-				materialToArray(mesh.material).forEach((material: Material) => {
+				ThreeMaterialUtils.materialToArray(mesh.material).forEach((material: Material) => {
 					// TODO(https://github.com/mrdoob/three.js/pull/18235): Clean up.
 					material.depthWrite = !material.transparent
 					// 放射光颜色与放射光贴图 不设置可能导致黑模
@@ -420,7 +428,7 @@ class ThreeViewer extends ThreePluginDispatcher {
 	}
 
 	render() {
-		if (this.renderCount > 0) {
+		if (this.activated) {
 			// const lookAt = this.renderLookAt.shift()
 			// lookAt && this.camera.lookAt(lookAt[0], lookAt[1], lookAt[2])
 
@@ -437,34 +445,38 @@ class ThreeViewer extends ThreePluginDispatcher {
 
 	start() {
 		if (this.object && !this.renderTimer) {
-			console.info('ThreeBuilder: start.', Date.now())
+			console.info('ThreeViewer: start.', Date.now())
+			this.activate()
 			this.render()
 		}
 	}
 
 	pause() {
 		if (this.renderTimer) {
-			console.info('ThreeBuilder: pause.', Date.now())
+			console.info('ThreeViewer: pause.', Date.now())
 			cancelAnimationFrame(this.renderTimer)
+			this.inactivate()
 			this.renderTimer = 0
 		}
 	}
 
 	activate() {
-		if (this.renderCount++ == 0) console.info('ThreeBuilder: activate.', Date.now())
-		// 无论什么情况下都要清除定时器，否则会掉帧
-		clearTimeout(this.lockRenderTimer)
-		// 有动画运行时不自动禁用
-		if (this.animator.runningActions.length > 0) return
-		const { renderLifeTime = 1 } = this.options
-		this.lockRenderTimer = setTimeout(this.inactivateBinded, renderLifeTime * 1000)
+		// debounce
+		clearTimeout(this.inactivateTimer)
+		if (this.activated) return
+		console.info('ThreeViewer: activate.', Date.now())
+		this.activated = true
+		if (!this.animator.runningActions.length) {
+			// no running animates
+			this.inactivateTimer = setTimeout(this.inactivateBinded, this.options.lifeTime * 1000)
+		}
 	}
 
 	inactivate() {
-		if (this.renderCount > 0) {
-			console.info('ThreeBuilder: inactivate.', Date.now())
-			clearTimeout(this.lockRenderTimer)
-			this.renderCount = 0
+		if (this.activated) {
+			console.info('ThreeViewer: inactivate.', Date.now())
+			clearTimeout(this.inactivateTimer)
+			this.activated = false
 		}
 	}
 
@@ -481,8 +493,10 @@ class ThreeViewer extends ThreePluginDispatcher {
 		this.pause()
 		// 清空场景
 		this.clear()
-		// 移除事件
+		// 移除three事件
 		this.listener.removeAllEventListeners()
+		// 移除hooks事件
+		this.dispatchEvent({ type: 'dispose' })
 		// 销毁插件
 		this.dispatchPlugin('dispose')
 		// 销毁渲染器
@@ -497,7 +511,8 @@ class ThreeViewer extends ThreePluginDispatcher {
 	//#region Scene
 	private setScene() {
 		this.scene = new Scene()
-		this.listener.push(this.scene, 'added', this.activateBinded, 'scene-added')
+		this.listener.push(this.scene, 'childadded', this.activateBinded, 'scene-childadded')
+		this.listener.push(this.scene, 'childremoved', this.activateBinded, 'scene-childremoved')
 	}
 
 	private setCamera() {
@@ -668,13 +683,13 @@ export interface ThreeViewerOptions {
 	height?: string | number
 	kiosk?: boolean
 	// 渲染的生命周期(秒)
-	renderLifeTime?: number
+	lifeTime?: number
 	textureColorSpace?: 'sRGB' | 'Linear'
 	outputColorSpace?: 'sRGB' | 'Linear'
 	// 插件
 	plugins?: ThreePlugin[]
 	// 事件
-	listeners?: (() => void)[]
+	events?: EventsObject
 	// 动画参数
 	animator?: ThreeAnimatorOptions
 	// 初始定位，默认居中

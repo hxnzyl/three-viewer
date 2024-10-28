@@ -1,71 +1,69 @@
-import { Raycaster, Vector2 } from 'three'
+import { OrthographicCamera, Raycaster, Vector2 } from 'three'
 import { ThreeRotateAnimate } from '../../animates/Rotate'
-import { ThreeRotateIdAnimate } from '../../animates/Rotate/Map'
 import { ThreeViewer } from '../../core/Viewer'
-import { addMouseEventListener } from '../../utils/three'
+import ThreeEventUtils from '../../utils/Event'
 import { ThreeViewCubeDataHelper } from './Data'
 import { ThreeViewCubeDirectionMap } from './data/DirectionMap'
-import { ThreeViewCubeRenderHelper } from './Render'
 
 class ThreeViewCubeEditorHelper {
 	domElement: HTMLElement
 	private cubeData: ThreeViewCubeDataHelper
-	private cubeRender: ThreeViewCubeRenderHelper
+	private camera: OrthographicCamera
 	private viewer: ThreeViewer
 	private raycaster: Raycaster
 	private componentId: string = ''
-	private rotateId?: ThreeRotateIdAnimate
 
 	constructor(
 		domElement: HTMLElement,
 		cubeData: ThreeViewCubeDataHelper,
-		cubeRender: ThreeViewCubeRenderHelper,
+		camera: OrthographicCamera,
 		viewer: ThreeViewer
 	) {
 		this.domElement = domElement
 		this.cubeData = cubeData
-		this.cubeRender = cubeRender
+		this.camera = camera
 		this.viewer = viewer
 		this.raycaster = new Raycaster()
-		addMouseEventListener(
+		const mouseManane = ThreeEventUtils.addMouseEventListener({
 			viewer,
-			domElement,
-			(event: MouseEvent) => {
+			dom: domElement,
+			throttle: true,
+			// click of rotate
+			click: (event: MouseEvent) => {
 				const componentId = this.getComponentId(this.canvasToNormalized(event.offsetX, event.offsetY))
 				if (componentId) {
 					if (this.componentId) {
 						this.cubeData.getComponent(this.componentId)?.cancelHighlight()
 						this.componentId = ''
 					}
-
-					this.reconcileAnimate(componentId)
+					this.viewer.animator.animate(
+						new ThreeRotateAnimate({
+							rotateId: ThreeViewCubeDirectionMap[componentId],
+							events: {
+								complete() {
+									mouseManane.lock = false
+								}
+							}
+						})
+					)
 				}
 			},
-			(event: MouseEvent) => {
+			// move of capture
+			move: (event: MouseEvent) => {
 				const newComponentId = this.getComponentId(this.canvasToNormalized(event.offsetX, event.offsetY)),
-					oldComponentId = this.componentId
+					oldComponentId = this.componentId,
+					changed = newComponentId != oldComponentId
 				if (!newComponentId) {
 					this.componentId = ''
-				} else if (newComponentId != oldComponentId) {
+				} else if (changed) {
 					this.cubeData.getComponent(newComponentId)?.highlight()
 					this.componentId = newComponentId
 				}
-				if (oldComponentId && newComponentId != oldComponentId) {
+				if (oldComponentId && changed) {
 					this.cubeData.getComponent(oldComponentId)?.cancelHighlight()
 				}
 			}
-		)
-	}
-
-	reconcileAnimate(componentId: string) {
-		const toRotateId = ThreeViewCubeDirectionMap[componentId]
-		this.viewer.animator.animate(
-			new ThreeRotateAnimate({
-				fromRotateId: this.rotateId,
-				toRotateId
-			})
-		)
-		this.rotateId = toRotateId
+		})
 	}
 
 	canvasToNormalized(x: number, y: number) {
@@ -75,8 +73,7 @@ class ThreeViewCubeEditorHelper {
 	}
 
 	getComponentId(vector: Vector2) {
-		const camera = this.cubeRender.getActiveCamera()
-		this.raycaster.setFromCamera(vector, camera)
+		this.raycaster.setFromCamera(vector, this.camera)
 		const meshes = this.cubeData.getMeshes(),
 			objects = this.raycaster.intersectObjects(meshes, true),
 			l = objects.length
@@ -98,7 +95,6 @@ class ThreeViewCubeEditorHelper {
 	dispose() {
 		this.domElement = null as any
 		this.cubeData = null as any
-		this.cubeRender = null as any
 	}
 }
 

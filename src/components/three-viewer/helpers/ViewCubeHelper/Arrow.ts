@@ -1,9 +1,10 @@
-import { CanvasTexture, GreaterDepth, Sprite, SpriteMaterial, Vector3 } from 'three'
+import { GreaterDepth, Sprite, SpriteMaterial, Vector3 } from 'three'
 import { Line2 } from 'three/examples/jsm/lines/Line2'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { ThreeViewCubeHelperColors } from '.'
-import { vector3sToArray } from '../../utils/three'
+import ThreeMaterialUtils from '../../utils/Material'
+import ThreeVectorUtils from '../../utils/Vector'
 import { ThreeViewCubeMeshHelper } from './Mesh'
 
 class ThreeViewCubeArrowHelper extends ThreeViewCubeMeshHelper {
@@ -67,7 +68,7 @@ class ThreeViewCubeArrowHelper extends ThreeViewCubeMeshHelper {
 	createWireframe(vectors: Vector3[]) {
 		const geometry = new LineGeometry(),
 			color = this.componentId == 'X' ? 0xff0000 : this.componentId == 'Y' ? 0x00ff00 : 0x0000ff
-		geometry.setPositions(vector3sToArray(vectors))
+		geometry.setPositions(ThreeVectorUtils.vector3sToArray(vectors))
 		// create return mesh
 		const returnMaterial = new LineMaterial({
 			color,
@@ -92,28 +93,19 @@ class ThreeViewCubeArrowHelper extends ThreeViewCubeMeshHelper {
 	}
 
 	createTextWireframe(vector: Vector3) {
-		const canvas2d = document.createElement('canvas'),
-			context2d = canvas2d.getContext('2d')!,
-			font = (context2d.font = '32px sans-serif'),
-			textMetrics = context2d.measureText(this.componentId),
-			textWidth = textMetrics.width,
-			textAscent = textMetrics.actualBoundingBoxAscent
-		canvas2d.width = 64
-		canvas2d.height = 64
-		context2d.font = font
-		context2d.fillStyle = this.componentId == 'X' ? 'red' : this.componentId == 'Y' ? 'green' : 'blue'
-		context2d.fillText(this.componentId, (64 - textWidth) / 2, (64 + textAscent) / 2)
-		const canvasTexture = new CanvasTexture(canvas2d)
 		// create text mesh
-		const textMeshMaterial = new SpriteMaterial({ map: canvasTexture })
-		const textMesh = new Sprite(textMeshMaterial)
-		textMesh.position.set(vector.x, vector.y, vector.z)
-		textMesh.scale.set(45, 45, 45)
-		textMesh.renderOrder = 100
-		this.textMesh = textMesh
+		this.textMesh = ThreeMaterialUtils.createTextMaterial(
+			this.componentId,
+			64,
+			64,
+			'32px sans-serif',
+			this.componentId == 'X' ? 'red' : this.componentId == 'Y' ? 'green' : 'blue'
+		)
+		this.textMesh.position.set(vector.x, vector.y, vector.z)
+		this.textMesh.scale.set(45, 45, 45)
 		// create text mesh back
 		const textMeshBackMaterial = new SpriteMaterial({
-			map: canvasTexture,
+			map: this.textMesh.material.map,
 			transparent: true,
 			opacity: 0.3,
 			depthFunc: GreaterDepth

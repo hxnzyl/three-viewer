@@ -16,7 +16,7 @@ import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader'
 import { ThreePlugin } from '../../core/Plugin'
 import { ThreeViewer } from '../../core/Viewer'
 import { extend } from '../../utils/extend'
-import { materialToArray } from '../../utils/three'
+import ThreeMaterialUtils from '../../utils/Material'
 
 class ThreeShineEffect extends ThreePlugin {
 	static Options: ThreeShineEffectOptions = {
@@ -100,7 +100,7 @@ class ThreeShineEffect extends ThreePlugin {
 
 		const { selectedBoxColor } = this.options
 
-		materialToArray(this.mesh.material).forEach((material: Material) => {
+		ThreeMaterialUtils.materialToArray(this.mesh.material).forEach((material: Material) => {
 			if (material instanceof MeshStandardMaterial || material instanceof MeshPhongMaterial) {
 				if (material.emissive) {
 					// @ts-ignore private _emissiveHex
@@ -127,7 +127,7 @@ class ThreeShineEffect extends ThreePlugin {
 	// @overwrite
 	hide() {
 		if (this.mesh) {
-			materialToArray(this.mesh.material).forEach((material: Material) => {
+			ThreeMaterialUtils.materialToArray(this.mesh.material).forEach((material: Material) => {
 				// @ts-ignore private _emissiveHex
 				if (material._emissiveHex) {
 					// @ts-ignore private _emissiveHex

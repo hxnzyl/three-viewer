@@ -4,7 +4,7 @@
  * @author OWen<733433@qq.com>
  */
 
-import { ColorRepresentation, Scene } from 'three'
+import { ColorRepresentation } from 'three'
 import { ThreePlugin } from '../../core/Plugin'
 import { ThreeViewer } from '../../core/Viewer'
 import { extend } from '../../utils/extend'
@@ -34,7 +34,6 @@ class ThreeViewCubeHelper extends ThreePlugin {
 	options = {} as Required<ThreeViewCubeHelperOptions>
 	domElement!: HTMLElement
 
-	private events: ('show' | 'hide')[] = []
 	private cubeData!: ThreeViewCubeDataHelper
 	private cubeRender!: ThreeViewCubeRenderHelper
 	private cubeEditor!: ThreeViewCubeEditorHelper
@@ -51,10 +50,13 @@ class ThreeViewCubeHelper extends ThreePlugin {
 		this.viewer = viewer
 		this.createDomElement()
 		this.cubeData = new ThreeViewCubeDataHelper(this.options.colors)
-		this.cubeRender = new ThreeViewCubeRenderHelper(this.domElement, this.cubeData)
-		this.cubeEditor = new ThreeViewCubeEditorHelper(this.domElement, this.cubeData, this.cubeRender, this.viewer)
-		this.events.forEach((fun) => this[fun]())
-		this.events = []
+		this.cubeRender = new ThreeViewCubeRenderHelper(this.domElement, this.cubeData.getScene())
+		this.cubeEditor = new ThreeViewCubeEditorHelper(
+			this.domElement,
+			this.cubeData,
+			this.cubeRender.getCamera(),
+			this.viewer
+		)
 	}
 
 	// @overwrite
@@ -66,9 +68,9 @@ class ThreeViewCubeHelper extends ThreePlugin {
 	createDomElement() {
 		if (this.domElement) return
 		const { width, height, visibility, domElement } = this.options
-		let el = domElement || document.getElementById('three-widget-cube-view')
+		let el = domElement || document.getElementById('three-view-cube-helper')
 		if (!el) (el = document.createElement('div')), this.viewer?.domElement?.appendChild(el)
-		el.id = 'three-widget-cube-view'
+		el.id = 'three-view-cube-helper'
 		el.style.cssText = `position:fixed;top:0;right:0;visibility:${visibility};width:${width}px;height:${height}px`
 		this.domElement = el
 	}
@@ -85,24 +87,12 @@ class ThreeViewCubeHelper extends ThreePlugin {
 
 	// @overwrite
 	show() {
-		if (this.domElement) {
-			this.cubeRender.setActiveScene(this.cubeData.getScene())
-			this.cubeRender.render()
-			this.domElement.style.visibility = ''
-		} else {
-			this.events.push('show')
-		}
+		this.domElement.style.visibility = ''
 	}
 
 	// @overwrite
 	hide() {
-		if (this.domElement) {
-			this.cubeRender.setActiveScene(new Scene())
-			this.cubeRender.render()
-			this.domElement.style.visibility = 'hidden'
-		} else {
-			this.events.push('hide')
-		}
+		this.domElement.style.visibility = 'hidden'
 	}
 
 	// @overwrite
@@ -111,7 +101,6 @@ class ThreeViewCubeHelper extends ThreePlugin {
 		this.cubeData.dispose()
 		this.cubeEditor.dispose()
 		this.cubeRender.dispose()
-		this.events = []
 		this.cubeRender = null as any
 	}
 }

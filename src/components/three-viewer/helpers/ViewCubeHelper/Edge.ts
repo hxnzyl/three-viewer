@@ -3,7 +3,7 @@ import { Line2 } from 'three/examples/jsm/lines/Line2'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { ThreeViewCubeHelperColors } from '.'
-import { vector3sToArray } from '../../utils/three'
+import ThreeVectorUtils from '../../utils/Vector'
 import { ThreeViewCubeMeshHelper } from './Mesh'
 
 class ThreeViewCubeEdgeHelper extends ThreeViewCubeMeshHelper {
@@ -64,7 +64,7 @@ class ThreeViewCubeEdgeHelper extends ThreeViewCubeMeshHelper {
 
 	createHighlightWireframe(vectors: Vector3[]) {
 		const geometry = new LineGeometry()
-		geometry.setPositions(vector3sToArray(vectors))
+		geometry.setPositions(ThreeVectorUtils.vector3sToArray(vectors))
 
 		const material = new LineMaterial({
 			color: this.colors.wireframeHighlightColor,
