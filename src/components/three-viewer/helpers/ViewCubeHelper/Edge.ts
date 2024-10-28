@@ -15,7 +15,7 @@ class ThreeViewCubeEdgeHelper extends ThreeViewCubeMeshHelper {
 
 	constructor(vertices: Vector3[], indices: number[], componentId: string, colors: ThreeViewCubeHelperColors) {
 		super()
-		this.highlightWidth = 3
+		this.highlightWidth = 5
 		this.width = 15
 		this.vertices = vertices
 		this.indices = indices
@@ -31,7 +31,6 @@ class ThreeViewCubeEdgeHelper extends ThreeViewCubeMeshHelper {
 			o = this.vertices[t],
 			s = i.clone().add(o).multiplyScalar(0.5).clone().multiplyScalar(-1),
 			n = s.clone().normalize(),
-			r = [],
 			a = o.clone().sub(i).normalize(),
 			l = i.clone().add(a.clone().multiplyScalar(20)),
 			h = i.clone().add(a.clone().multiplyScalar(80)),
@@ -49,13 +48,14 @@ class ThreeViewCubeEdgeHelper extends ThreeViewCubeMeshHelper {
 			g.push(new Vector3().setZ(u).add(n))
 		}
 		if (2 === g.length) {
-			r.push(l.clone().add(n))
-			r.push(l.clone().add(g[0]))
-			r.push(h.clone().add(g[0]))
-			r.push(h.clone().add(n))
-			r.push(h.clone().add(g[1]))
-			r.push(l.clone().add(g[1]))
-			this.mesh = this.createMesh(r)
+			this.mesh = this.createMesh([
+				l.clone().add(n),
+				l.clone().add(g[0]),
+				h.clone().add(g[0]),
+				h.clone().add(n),
+				h.clone().add(g[1]),
+				l.clone().add(g[1])
+			])
 			this.transparent(this.mesh)
 			this.wireframeMesh = this.createWireframe([l, h])
 			this.highlightWireframeMesh = this.createHighlightWireframe([l.sub(n), h.sub(n)])

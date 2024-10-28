@@ -265,12 +265,12 @@ class ThreeViewer extends ThreePluginDispatcher {
 		this.controls = new OrbitControls(this.camera, this.renderer.domElement)
 		// this.controls = new TrackballControls(this.camera, this.renderer.domElement)
 		// this.controls.rotateSpeed = 3
-		this.controls.autoRotate = false
+		// this.controls.autoRotate = false
 		this.controls.screenSpacePanning = true
 		// up
-		this.controls.minPolarAngle = 0
+		// this.controls.minPolarAngle = 0
 		// down
-		this.controls.maxPolarAngle = Math.PI
+		// this.controls.maxPolarAngle = Math.PI
 		this.listener.push(this.controls, 'change', this.activateBinded, 'controls-change')
 	}
 

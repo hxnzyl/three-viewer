@@ -23,10 +23,29 @@ class ThreeAxesHelper extends ThreePlugin {
 	// @overwrite
 	initialize(viewer: ThreeViewer) {
 		if (this.viewer) return
+
 		this.viewer = viewer
+
 		this.helper = new AxesHelper()
 		this.helper.renderOrder = 999
 		this.helper.onBeforeRender = (renderer) => renderer.clearDepth()
+
+		// create X text
+		const xTextMesh = ThreeMaterialUtils.createTextMaterial('X', 64, 64, '32px sans-serif', 'red')
+		xTextMesh.position.set(0.5, 0, 0)
+		this.helper.add(xTextMesh)
+
+		// create Y text
+		const yTextMesh = ThreeMaterialUtils.createTextMaterial('Y', 64, 64, '32px sans-serif', 'green')
+		yTextMesh.rotation.z = Math.PI / 2
+		yTextMesh.position.set(0, 0.5, 0)
+		this.helper.add(yTextMesh)
+
+		// create Z text
+		const zTextMesh = ThreeMaterialUtils.createTextMaterial('Z', 64, 64, '32px sans-serif', 'blue')
+		zTextMesh.rotation.x = -Math.PI / 2
+		zTextMesh.position.set(0, 0, 0.5)
+		this.helper.add(zTextMesh)
 	}
 
 	// @overwrite
@@ -39,33 +58,15 @@ class ThreeAxesHelper extends ThreePlugin {
 
 	// @overwrite
 	update() {
-		this.hide()
-
-		// scale to object size
 		const { x, y, z } = this.viewer.objectSize
-		this.helper.scale.set(x, y, z)
-
-		// create X text
-		const xTextMesh = ThreeMaterialUtils.createTextMaterial('X', 64, 64, '32px sans-serif', 'red')
-		xTextMesh.position.set(1, 0, 0)
-		xTextMesh.scale.set(1 / x, 1 / y, 1 / z)
-		this.helper.add(xTextMesh)
-
-		// create Y text
-		const yTextMesh = ThreeMaterialUtils.createTextMaterial('Y', 64, 64, '32px sans-serif', 'green')
-		yTextMesh.rotation.z = Math.PI / 2
-		yTextMesh.position.set(0, 1, 0)
-		yTextMesh.scale.set(1 / x, 1 / y, 1 / z)
-		this.helper.add(yTextMesh)
-
-		// create Z text
-		const zTextMesh = ThreeMaterialUtils.createTextMaterial('Z', 64, 64, '32px sans-serif', 'blue')
-		zTextMesh.rotation.x = -Math.PI / 2
-		zTextMesh.position.set(0, 0, 1)
-		zTextMesh.scale.set(1 / x, 1 / y, 1 / z)
-		this.helper.add(zTextMesh)
-
-		this.show()
+		const { scale, children } = this.helper
+		if (scale.x !== x * 2) {
+			this.hide()
+			scale.set(x * 2, y * 2, z * 2)
+			// keep children scale
+			children.forEach((mesh) => mesh.scale.set(0.5 / (x * 2), 0.5 / (y * 2), 0.5 / (z * 2)))
+			this.show()
+		}
 	}
 
 	// @overwrite

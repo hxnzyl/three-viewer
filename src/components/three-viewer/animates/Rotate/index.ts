@@ -83,7 +83,6 @@ class ThreeRotateAnimate extends ThreeAnimate {
 					up.lerpVectors(fromUp, toUp, news.t)
 				}
 				target.lerpVectors(fromTarget, toTarget, news.t)
-				// this.dispatchEvent({ type: 'update' })
 			},
 			complete: () => {
 				controls.enabled = enabled

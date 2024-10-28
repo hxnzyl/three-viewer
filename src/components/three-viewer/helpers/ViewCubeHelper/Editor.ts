@@ -24,10 +24,11 @@ class ThreeViewCubeEditorHelper {
 		this.camera = camera
 		this.viewer = viewer
 		this.raycaster = new Raycaster()
-		const mouseManane = ThreeEventUtils.addMouseEventListener({
+		const throttle = { lock: false }
+		ThreeEventUtils.addMouseEventListener({
 			viewer,
 			dom: domElement,
-			throttle: true,
+			throttle,
 			// click of rotate
 			click: (event: MouseEvent) => {
 				const componentId = this.getComponentId(this.canvasToNormalized(event.offsetX, event.offsetY))
@@ -41,7 +42,8 @@ class ThreeViewCubeEditorHelper {
 							rotateId: ThreeViewCubeDirectionMap[componentId],
 							events: {
 								complete() {
-									mouseManane.lock = false
+									// animate complete then release lock
+									throttle.lock = false
 								}
 							}
 						})

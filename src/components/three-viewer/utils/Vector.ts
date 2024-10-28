@@ -39,7 +39,7 @@ class ThreeVectorUtils {
 		const l = vectors.length,
 			array = []
 		for (let o = 0; o < l; o++) {
-			var s = vectors[o]
+			const s = vectors[o]
 			array.push(s.x, s.y, s.z)
 		}
 		return array
