@@ -39,6 +39,7 @@ class ThreeGridHelper extends ThreePlugin {
 		this.gridHelper = new Group()
 		this.gridHelper.add(new GridHelper(size, divisions * 5, colorCenterLine, colorCenterLine))
 		this.gridHelper.add(new GridHelper(size, divisions, colorGrid, colorGrid))
+		this.gridHelper.position.set(0, 0, -1)
 		this.show()
 	}
 
@@ -77,3 +78,4 @@ export interface ThreeGridHelperOptions {
 }
 
 export { ThreeGridHelper }
+

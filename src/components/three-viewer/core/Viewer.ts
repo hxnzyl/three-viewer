@@ -1,49 +1,48 @@
 import { EventListenerQueue } from 'events-ns'
 import {
-	AmbientLight,
-	AnimationClip,
-	Box3,
-	Cache,
-	Camera,
-	Color,
-	DirectionalLight,
-	Group,
-	Light,
-	LineBasicMaterial,
-	LinearSRGBColorSpace,
-	Material,
-	Mesh,
-	MeshBasicMaterial,
-	MeshLambertMaterial,
-	MeshPhongMaterial,
-	MeshPhysicalMaterial,
-	MeshStandardMaterial,
-	Object3D,
-	Object3DEventMap,
-	PMREMGenerator,
-	PerspectiveCamera,
-	Raycaster,
-	SRGBColorSpace,
-	Scene,
-	Skeleton,
-	SkeletonHelper,
-	SkinnedMesh,
-	Texture,
-	Vector2,
-	Vector3,
-	WebGLRenderer
+    AmbientLight,
+    AnimationClip,
+    Box3,
+    Cache,
+    Camera,
+    Color,
+    DirectionalLight,
+    Group,
+    Light,
+    LineBasicMaterial,
+    LinearSRGBColorSpace,
+    Material,
+    Mesh,
+    MeshBasicMaterial,
+    MeshLambertMaterial,
+    MeshPhongMaterial,
+    MeshPhysicalMaterial,
+    MeshStandardMaterial,
+    Object3D,
+    Object3DEventMap,
+    PMREMGenerator,
+    PerspectiveCamera,
+    Raycaster,
+    SRGBColorSpace,
+    Scene,
+    Skeleton,
+    SkeletonHelper,
+    SkinnedMesh,
+    Texture,
+    Vector2,
+    Vector3,
+    WebGLRenderer
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module'
-import { Tween } from 'three/examples/jsm/libs/tween.module'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { ThreeEnvironment, ThreeEnvironments } from '../config/Environments'
-import { EventsObject, NumberObject } from '../types'
+import { EventsObject } from '../types'
 import ThreeEventUtils from '../utils/Event'
 import ThreeMaterialUtils from '../utils/Material'
 import { assertUrl } from '../utils/detect'
@@ -90,7 +89,6 @@ class ThreeViewer extends ThreePluginDispatcher {
 	private inactivateBinded: () => void
 
 	private activated: boolean = false
-	private tween?: Tween<NumberObject>
 	private raycaster!: Raycaster
 
 	listener: EventListenerQueue
@@ -708,3 +706,4 @@ export interface ThreeViewerOptions {
 }
 
 export { ThreeViewer }
+

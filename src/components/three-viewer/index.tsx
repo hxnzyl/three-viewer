@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { ThreeViewer, ThreeViewerOptions } from './core/Viewer'
+import { useEffect } from 'react';
+import { ThreeViewer, ThreeViewerOptions } from './core/Viewer';
 
 export default function ThreeViewerComponent(props: { url: string; options: ThreeViewerOptions }) {
 	useEffect(() => {
@@ -14,5 +14,5 @@ export default function ThreeViewerComponent(props: { url: string; options: Thre
 		}
 	}, [props])
 
-	return <div id="three-viewer" className="flex-shrink-0 w-full"></div>
+	return <div id="three-viewer" className="min-w-screen min-h-screen"></div>
 }

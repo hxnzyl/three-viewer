@@ -1,8 +1,8 @@
 import { AxesHelper } from 'three'
 import { ThreePlugin } from '../../core/Plugin'
 import { ThreeViewer } from '../../core/Viewer'
-import { extend } from '../../utils/extend'
 import ThreeMaterialUtils from '../../utils/Material'
+import { extend } from '../../utils/extend'
 
 class ThreeAxesHelper extends ThreePlugin {
 	static Options: ThreeAxesHelperOptions = {
@@ -27,7 +27,6 @@ class ThreeAxesHelper extends ThreePlugin {
 		this.viewer = viewer
 
 		this.helper = new AxesHelper()
-		this.helper.renderOrder = 999
 		this.helper.onBeforeRender = (renderer) => renderer.clearDepth()
 
 		// create X text
@@ -96,3 +95,4 @@ export interface ThreeAxesHelperOptions {
 }
 
 export { ThreeAxesHelper }
+
