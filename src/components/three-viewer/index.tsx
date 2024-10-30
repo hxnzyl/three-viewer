@@ -5,7 +5,7 @@ export default function ThreeViewerComponent(props: { url: string; options: Thre
 	useEffect(() => {
 		// mounted
 		let viewer = new ThreeViewer(props.options)
-		viewer.loadUrl(props.url)
+		viewer.loadScene(props.url)
 
 		// unmounted
 		return () => {

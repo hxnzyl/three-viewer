@@ -24,28 +24,18 @@ class ThreeViewCubeEditorHelper {
 		this.camera = camera
 		this.viewer = viewer
 		this.raycaster = new Raycaster()
-		const throttle = { lock: false }
 		ThreeEventUtils.addMouseEventListener({
 			viewer,
 			dom: domElement,
-			throttle,
 			// click of rotate
 			click: (event: MouseEvent) => {
 				const componentId = this.getComponentId(this.canvasToNormalized(event.offsetX, event.offsetY))
-				if (componentId) {
-					if (this.componentId) {
-						this.cubeData.getComponent(this.componentId)?.cancelHighlight()
-						this.componentId = ''
-					}
-					this.viewer.animator.animate(
+				if (componentId && this.componentId) {
+					this.cubeData.getComponent(this.componentId)?.cancelHighlight()
+					this.componentId = ''
+					this.viewer.animator.pauseAll(true).animate(
 						new ThreeRotateAnimate({
-							rotateId: ThreeViewCubeDirectionMap[componentId],
-							events: {
-								complete() {
-									// animate complete then release lock
-									throttle.lock = false
-								}
-							}
+							rotateId: ThreeViewCubeDirectionMap[componentId]
 						})
 					)
 				}
@@ -101,3 +91,4 @@ class ThreeViewCubeEditorHelper {
 }
 
 export { ThreeViewCubeEditorHelper }
+

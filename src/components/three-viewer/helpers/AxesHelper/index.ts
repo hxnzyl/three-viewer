@@ -45,6 +45,7 @@ class ThreeAxesHelper extends ThreePlugin {
 		zTextMesh.rotation.x = -Math.PI / 2
 		zTextMesh.position.set(0, 0, 0.5)
 		this.helper.add(zTextMesh)
+        
 	}
 
 	// @overwrite
@@ -63,7 +64,9 @@ class ThreeAxesHelper extends ThreePlugin {
 			this.hide()
 			scale.set(x * 2, y * 2, z * 2)
 			// keep children scale
-			children.forEach((mesh) => mesh.scale.set(0.5 / (x * 2), 0.5 / (y * 2), 0.5 / (z * 2)))
+			for (const mesh of children) {
+				mesh.scale.set(0.5 / (x * 2), 0.5 / (y * 2), 0.5 / (z * 2))
+			}
 			this.show()
 		}
 	}
@@ -79,7 +82,7 @@ class ThreeAxesHelper extends ThreePlugin {
 	}
 
 	// @overwrite
-	onResize() {}
+	resize() {}
 
 	// @overwrite
 	dispose() {

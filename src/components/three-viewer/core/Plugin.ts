@@ -1,6 +1,5 @@
-import { Mesh } from 'three'
 import { AnyObject } from '../types'
-import { ThreePluginDispatcher } from './PluginDispatcher'
+import { ThreeEventDispatcherParams, ThreePluginDispatcher } from './PluginDispatcher'
 import { ThreeViewer } from './Viewer'
 
 abstract class ThreePlugin {
@@ -11,9 +10,9 @@ abstract class ThreePlugin {
 
 	abstract initialize(dispatcher: ThreePluginDispatcher): void
 
-	abstract setOptions(options?: {}): void
+	abstract setOptions(options?: AnyObject): void
 
-	abstract update(args?: any): void
+	abstract update(params?: ThreeEventDispatcherParams): void
 
 	abstract show(): void
 
@@ -21,13 +20,14 @@ abstract class ThreePlugin {
 
 	abstract dispose(): void
 
-	capture(objects?: Mesh) {}
+	capture(params?: ThreeEventDispatcherParams) {}
 
 	render() {}
 
-	onResize() {}
+	resize() {}
 }
 
 export type ThreePlugins = AnyObject<ThreePlugin>
 
 export { ThreePlugin as ThreePlugin }
+

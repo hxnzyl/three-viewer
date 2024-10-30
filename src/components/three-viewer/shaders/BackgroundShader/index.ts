@@ -7,12 +7,12 @@ import { Color, DoubleSide, IUniform, Mesh, PlaneGeometry, RawShaderMaterial, Ve
 import { ThreePlugin } from '../../core/Plugin'
 import { ThreeViewer } from '../../core/Viewer'
 import { StringObject } from '../../types'
-import { isIOS } from '../../utils/detect'
 import { extend } from '../../utils/extend'
 
 // @ts-ignore
 import fragmentShader from './shader.fs'
 // @ts-ignore
+import { ThreeEventDispatcherParams } from '../../core/PluginDispatcher'
 import vertexShader from './shader.vs'
 
 class ThreeBackgroundShader extends ThreePlugin {
@@ -35,7 +35,7 @@ class ThreeBackgroundShader extends ThreePlugin {
 		offset: new Vector2(0, 0),
 		scale: new Vector2(1, 1),
 		aspect: 1,
-		grainScale: isIOS() ? 0 : 0.001,
+		grainScale: 0.001,
 		grainTime: 0,
 		noiseAlpha: 0.25,
 		aspectCorrection: false
@@ -84,12 +84,12 @@ class ThreeBackgroundShader extends ThreePlugin {
 	render() {}
 
 	// @overwrite
-	update(uniforms?: ThreeBackgroundShaderUniforms) {
+	update({ uniforms }: ThreeEventDispatcherParams) {
 		if (this.material && uniforms) {
-			Object.keys(uniforms).forEach((key: string) => {
+			for (const key in uniforms) {
 				const keyAs = key as keyof ThreeBackgroundShaderUniforms
 				this.material.uniforms[key].value = uniforms[keyAs]
-			})
+			}
 		}
 		this.show()
 	}
@@ -105,7 +105,7 @@ class ThreeBackgroundShader extends ThreePlugin {
 	}
 
 	// @overwrite
-	onResize() {
+	resize() {
 		this.material.uniforms.aspect.value = this.viewer.width / this.viewer.height
 	}
 
@@ -137,3 +137,4 @@ export interface ThreeBackgroundShaderOptions extends ThreeBackgroundShaderUnifo
 }
 
 export { ThreeBackgroundShader }
+

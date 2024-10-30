@@ -66,7 +66,7 @@ class ThreeCameraHelper extends ThreePlugin {
 	}
 
 	// @overwrite
-	onResize() {}
+	resize() {}
 
 	// @overwrite
 	dispose() {

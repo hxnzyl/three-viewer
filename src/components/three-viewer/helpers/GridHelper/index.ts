@@ -58,7 +58,7 @@ class ThreeGridHelper extends ThreePlugin {
 	}
 
 	// @overwrite
-	onResize() {}
+	resize() {}
 
 	// @overwrite
 	dispose() {

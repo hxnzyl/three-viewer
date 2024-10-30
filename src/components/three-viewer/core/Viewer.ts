@@ -1,15 +1,11 @@
 import { EventListenerQueue } from 'events-ns'
 import {
-    AmbientLight,
-    AnimationClip,
     Box3,
     Cache,
     Camera,
     Color,
-    DirectionalLight,
     Group,
     Light,
-    LineBasicMaterial,
     LinearSRGBColorSpace,
     Material,
     Mesh,
@@ -20,13 +16,11 @@ import {
     MeshStandardMaterial,
     Object3D,
     Object3DEventMap,
-    PMREMGenerator,
     PerspectiveCamera,
     Raycaster,
     SRGBColorSpace,
     Scene,
     Skeleton,
-    SkeletonHelper,
     SkinnedMesh,
     Texture,
     Vector2,
@@ -35,25 +29,19 @@ import {
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module'
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
-import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader'
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
+import { ThreeAnimator, ThreeAnimatorOptions } from '../animates/Animator'
 import { ThreeEnvironment, ThreeEnvironments } from '../config/Environments'
-import { EventsObject } from '../types'
 import ThreeEventUtils from '../utils/Event'
 import ThreeMaterialUtils from '../utils/Material'
-import { assertUrl } from '../utils/detect'
 import { extend } from '../utils/extend'
-import { ThreeAnimator, ThreeAnimatorOptions } from './Animator'
+import { ThreeLighter, ThreeLighterOptions } from './Lighter'
+import { ThreeLoader } from './Loader'
 import { ThreePlugin } from './Plugin'
-import { ThreePluginDispatcher } from './PluginDispatcher'
+import { ThreeEventDispatcherParams, ThreeEventsObject } from './PluginDispatcher'
 
 Cache.enabled = true
 
-class ThreeViewer extends ThreePluginDispatcher {
+class ThreeViewer extends ThreeLoader {
 	static Options: ThreeViewerOptions = {
 		// domElement: undefined,
 		visibility: 'hidden',
@@ -70,47 +58,34 @@ class ThreeViewer extends ThreePluginDispatcher {
 		// position: undefined,
 		fov: 75,
 		near: 0.1,
-		far: 1000,
-		// 环境光
-		ambientColor: 0xffffff,
-		ambientIntensity: 2,
-		// 平行光
-		directNumber: 3,
-		directColor: 0xffffff,
-		directIntensity: 0.5
+		far: 1000
 	}
 
 	private renderTimer?: number
 	private renderLookAt: number[][] = []
 	private inactivateTimer?: NodeJS.Timeout
+	private activated: boolean = false
 
 	private renderBinded: () => void
 	private activateBinded: () => void
 	private inactivateBinded: () => void
 
-	private activated: boolean = false
-	private raycaster!: Raycaster
-
 	listener: EventListenerQueue
 	animator: ThreeAnimator
+	lighter: ThreeLighter
+	raycaster?: Raycaster
 	options = {} as Required<ThreeViewerOptions>
 	width: number = 0
 	height: number = 0
-	lights: Light[] = []
 	meshes: Mesh[] = []
-	morphs: Mesh[] = []
-	cameras: Camera[] = []
-	skeletons: Skeleton[] = []
 	materials: Material[] = []
-	skeletonHelpers: SkeletonHelper[] = []
-
 	domElement!: HTMLElement
 	renderer!: WebGLRenderer
 	controls!: OrbitControls
 	camera!: Camera
 	scene!: Scene
 	environment?: ThreeEnvironment
-	object?: Group<Object3DEventMap>
+	object?: Group
 	objectBox3!: Box3
 	objectCenter!: Vector3
 	objectSize!: Vector3
@@ -118,33 +93,25 @@ class ThreeViewer extends ThreePluginDispatcher {
 
 	constructor(options?: ThreeViewerOptions) {
 		super()
-		// 设置参数
 		this.setOptions(options)
-		// 辅助类
 		this.animator = new ThreeAnimator(this.options.animator)
+		this.addPlugin(this.animator)
 		this.listener = new EventListenerQueue([])
 		this.animator.initialize(this)
-		// bind事件
+		this.lighter = new ThreeLighter(this.options.lighter)
+		this.addPlugin(this.lighter)
+		// Bind internal event, Transfer this
 		this.renderBinded = this.render.bind(this)
 		this.activateBinded = this.activate.bind(this)
 		this.inactivateBinded = this.inactivate.bind(this)
-		// 创建DOM
 		this.createDomElement()
-		// 设置渲染
 		this.setRender()
-		// 设置场景
 		this.setScene()
-		// 设置相机
 		this.setCamera()
-		// 设置控制器
 		this.setControls()
-		// 设置反射
-		this.setRaycaster()
-		// 添加插件
 		this.addPlugins(this.options.plugins)
-		// 设置事件
 		this.setEvent()
-		// 添加事件
+		// Unified addition of events
 		this.listener.addEventListener()
 	}
 
@@ -159,10 +126,9 @@ class ThreeViewer extends ThreePluginDispatcher {
 				dom: this.domElement,
 				// 点击模型捕获
 				click: (event: MouseEvent) => {
-					this.dispatchPlugin(
-						'capture',
-						this.capture(new Vector2((event.clientX / this.width) * 2 - 1, -(event.clientY / this.height) * 2 + 1))
-					)
+					this.dispatchPlugin('capture', {
+						mesh: this.capture(new Vector2((event.clientX / this.width) * 2 - 1, -(event.clientY / this.height) * 2 + 1))
+					})
 				}
 				// move: (event: MouseEvent) => {
 				// 	// 获取鼠标位置
@@ -174,7 +140,7 @@ class ThreeViewer extends ThreePluginDispatcher {
 				// }
 			})
 		}
-		// tab可见时渲染
+		// listening visibility change
 		this.listener.push(
 			document,
 			'visibilitychange',
@@ -187,7 +153,7 @@ class ThreeViewer extends ThreePluginDispatcher {
 			},
 			false
 		)
-		// 窗口大小发生变化
+		// listening the window resize
 		this.listener.push(
 			window,
 			'resize',
@@ -203,18 +169,23 @@ class ThreeViewer extends ThreePluginDispatcher {
 
 				this.renderer.setSize(this.width, this.height)
 
-				this.dispatchPlugin('onResize')
+				this.dispatchPlugin('resize')
 			},
 			false
 		)
-		// 添加参数中的事件
+		// add events from options
 		const { events } = this.options
 		for (const type in events) {
 			this.addEventListener(type, events[type])
 		}
+		// Add loader event
+		this.addEventListener('onLoadScene', this.update)
+		this.addEventListener('onLoadObject', ({ group }: ThreeEventDispatcherParams) => {
+			group && this.scene.add(group)
+			this.activate()
+		})
 	}
 
-	//#region Render
 	private createDomElement() {
 		if (this.domElement) return
 		const { width, height, visibility, domElement } = this.options
@@ -272,57 +243,26 @@ class ThreeViewer extends ThreePluginDispatcher {
 		this.listener.push(this.controls, 'change', this.activateBinded, 'controls-change')
 	}
 
-	loadUrl(url: string) {
-		assertUrl(url)
-
-		const isObj = url.endsWith('.obj')
-		const loader = isObj
-			? new OBJLoader()
-			: new GLTFLoader()
-					.setCrossOrigin('anonymous')
-					.setDRACOLoader(new DRACOLoader().setDecoderPath('/three-viewer/wasm/'))
-					.setKTX2Loader(new KTX2Loader().setTranscoderPath('/three-viewer/wasm/').detectSupport(this.renderer))
-					.setMeshoptDecoder(MeshoptDecoder)
-
-		loader.load(
-			url,
-			(data: GLTF | Group<Object3DEventMap>) => {
-				const dataAsGLTF = data as GLTF
-				const dataAsGroup = data as Group<Object3DEventMap>
-
-				const scene: Group<Object3DEventMap> = isObj ? dataAsGroup : dataAsGLTF.scene || dataAsGLTF.scenes[0]
-
-				this.update(scene, data.animations)
-
-				// See: https://github.com/google/draco/issues/349
-				// DRACOLoader.releaseDecoderModule();
-
-				this.dispatchEvent({ type: 'loaded', data })
-			},
-			(data) => {
-				this.dispatchEvent({ type: 'progress', data })
-			},
-			(error: any) => {
-				const message = error?.message || error + ''
-				if (message.match(/ProgressEvent/)) {
-					error.message = 'Unable to retrieve this file. Check JS console and browser network tab.'
-				} else if (message.match(/Unexpected token/)) {
-					error.message = `Unable to parse file content. Verify that this file is valid. Error: "${message}"`
-				} else if (error && error.target && error.target instanceof Image) {
-					error.message = 'Missing texture: ' + error.target.src.split('/').pop()
-				}
-				this.dispatchEvent({ type: 'error', data: error })
-			}
-		)
-
-		return this
+	private setScene() {
+		this.scene = new Scene()
+		// this.listener.push(this.scene, 'childadded', this.activateBinded, 'scene-childadded')
+		this.listener.push(this.scene, 'childremoved', this.activateBinded, 'scene-childremoved')
 	}
 
-	update(object: Group<Object3DEventMap>, clips: AnimationClip[]) {
-		this.hide()
+	private setCamera() {
+		const { near, far, fov } = this.options
+		const aspect = this.width / this.height
+		this.camera = new PerspectiveCamera(fov, aspect, near, far)
+		this.camera.name = 'ThreeViewer_Camera_Default'
+		this.scene.add(this.camera)
+	}
 
-		this.object = object
-		this.objectBox3 = new Box3().setFromObject(object)
+	update({ group, clips }: ThreeEventDispatcherParams) {
+		this.hide()
+		if (!group) return
+
+		this.object = group
+		this.objectBox3 = new Box3().setFromObject(group)
 		this.objectCenter = this.objectBox3.getCenter(new Vector3())
 		this.objectSize = this.objectBox3.getSize(new Vector3())
 		this.objectDistance = Math.max(this.objectSize.x, this.objectSize.y, this.objectSize.z) * 3
@@ -338,60 +278,46 @@ class ThreeViewer extends ThreePluginDispatcher {
 
 		this.controls.enabled = true
 
-		this.skeletons = []
 		this.meshes = []
 		this.materials = []
-		this.morphs = []
-		this.cameras = []
-		this.lights = []
+
+		const lights: Light[] = []
+		const cameras: Camera[] = []
+		const morphs: Mesh[] = []
+		const skeletons: Skeleton[] = []
 
 		this.object.traverse((node: Object3D<Object3DEventMap>) => {
 			// 设置模型生成阴影并接收阴影
 			node.castShadow = true
 			node.receiveShadow = true
-			// 灯光
 			if (node instanceof Light) {
-				this.lights.push(node)
-			}
-			// 相机
-			else if (node instanceof Camera) {
-				node.name = node.name || `ThreeViewer_Camera_${this.cameras.length + 1}`
-				this.cameras.push(node)
-			}
-			// 网格
-			else if (node instanceof Mesh) {
+				// 灯光
+				lights.push(node)
+			} else if (node instanceof Camera) {
+				// 相机
+				node.name = node.name || `ThreeViewer_Camera_${cameras.length + 1}`
+				cameras.push(node)
+			} else if (node instanceof Mesh) {
+				// 网格
 				const mesh = node as Mesh
 				this.meshes.push(mesh)
-
-				// 网格材料
-				ThreeMaterialUtils.materialToArray(mesh.material).forEach((material: Material) => {
-					// TODO(https://github.com/mrdoob/three.js/pull/18235): Clean up.
-					material.depthWrite = !material.transparent
-					// 放射光颜色与放射光贴图 不设置可能导致黑模
-					if (material instanceof MeshStandardMaterial || material instanceof MeshPhongMaterial) {
-						material.emissive = material.color
-						material.emissiveMap = material.emissiveMap || material.map
-						this.updateTextureColorSpace(material, this.options.textureColorSpace)
-					}
+				// 遍历材料
+				const materials = ThreeMaterialUtils.materialToArray(mesh.material)
+				for (const material of materials) {
+					this.updateTextureColorSpace(material as ThreeMaterialAndTexture, this.options.textureColorSpace)
 					this.materials.push(material)
-				})
-
-				// 变形动画
-				if (mesh.morphTargetInfluences) {
-					this.morphs.push(mesh)
 				}
-				// 骨骼
-				else if (mesh instanceof SkinnedMesh) {
-					this.skeletons.push(mesh.skeleton)
+				if (mesh.morphTargetInfluences) {
+					// 变形动画
+					morphs.push(mesh)
+				} else if (mesh instanceof SkinnedMesh) {
+					// 骨骼
+					skeletons.push(mesh.skeleton)
 				}
 			}
 		})
 
-		this.lights.length || this.addLights()
-
-		this.animator.updateClips(clips)
-
-		this.dispatchPlugin('update')
+		this.dispatchPlugin('update', { clips, lights, morphs, skeletons })
 
 		this.show()
 
@@ -400,6 +326,7 @@ class ThreeViewer extends ThreePluginDispatcher {
 	}
 
 	capture(vector: Vector2) {
+		this.raycaster = this.raycaster || new Raycaster()
 		this.raycaster.setFromCamera(vector, this.camera)
 		// gltf文件需要深度查找
 		// const objects = this.raycaster.intersectObjects(this.scene.children, true)
@@ -432,7 +359,6 @@ class ThreeViewer extends ThreePluginDispatcher {
 
 			this.renderer.render(this.scene, this.camera)
 
-			this.animator.render()
 			this.controls?.update()
 
 			this.dispatchPlugin('render')
@@ -462,8 +388,8 @@ class ThreeViewer extends ThreePluginDispatcher {
 		// debounce
 		clearTimeout(this.inactivateTimer)
 		if (this.activated) return
-		console.info('ThreeViewer: activate.', Date.now())
 		this.activated = true
+		console.info('ThreeViewer: activate.', Date.now())
 		if (!this.animator.runningActions.length) {
 			// no running animates
 			this.inactivateTimer = setTimeout(this.inactivateBinded, this.options.lifeTime * 1000)
@@ -504,205 +430,115 @@ class ThreeViewer extends ThreePluginDispatcher {
 		// 释放一些资源（不是必要的，JS会自行回收）
 		this.renderer = null as any
 	}
-	//#endregion Render
-
-	//#region Scene
-	private setScene() {
-		this.scene = new Scene()
-		this.listener.push(this.scene, 'childadded', this.activateBinded, 'scene-childadded')
-		this.listener.push(this.scene, 'childremoved', this.activateBinded, 'scene-childremoved')
-	}
-
-	private setCamera() {
-		const { near, far, fov } = this.options
-		const aspect = this.width / this.height
-		this.camera = new PerspectiveCamera(fov, aspect, near, far)
-		this.scene.add(this.camera)
-	}
-
-	private setRaycaster() {
-		this.raycaster = new Raycaster()
-	}
 
 	updateCamera(name: string) {
 		// @TODO
 	}
-	//#endregion Scene
 
-	//#region Plugin
 	updateBackground(color1: string | number, color2: string | number) {
-		const backShader = this.getPlugin('Shaders.Background')
-		if (backShader) {
-			backShader.update({ color1: new Color(color1), color2: new Color(color2) })
+		const backgroundShader = this.getPlugin('Shaders.Background')
+		if (backgroundShader) {
+			backgroundShader.update({ color1: new Color(color1), color2: new Color(color2) })
 		} else {
 			this.scene.background = new Color(color1)
 		}
 	}
 
-	updateEnvironment(name: string, background: boolean) {
+	async updateEnvironment(name: string, background: boolean) {
 		this.environment = ThreeEnvironments.find((entry) => entry.name === name)
 		if (!this.environment) return
-		const { path } = this.environment,
-			resolve = (envMap: Texture | null) => {
-				const backShader = this.getPlugin('Shaders.Background')
-				// 隐藏背景
-				if (backShader) !envMap && background ? backShader.show() : backShader.hide()
-				// 设置背景
-				this.scene.background = background ? envMap : null
-				// 设置环境
-				this.scene.environment = envMap
-			}
-		if (path) {
-			// 加载环境贴图
-			new RGBELoader().load(path, (texture) => {
-				// 通过PMREMGenerator将HDR纹理生成立方体贴图，并将其用作背景和环境光照
-				const pmremGenerator = new PMREMGenerator(this.renderer)
-				pmremGenerator.compileEquirectangularShader()
-				const envMap = pmremGenerator.fromEquirectangular(texture).texture
-				pmremGenerator.dispose()
-				texture.dispose()
-				resolve(envMap)
-			})
-		} else {
-			resolve(null)
-		}
-	}
-	//#endregion Plugin
-
-	//#region Lights
-	private addLights() {
-		const { ambientColor, ambientIntensity, directNumber, directColor, directIntensity } = this.options
-
-		// 环境光
-		const light1 = new AmbientLight(ambientColor, ambientIntensity)
-		light1.name = 'Ambient Light'
-		this.scene.add(light1)
-		this.lights.push(light1)
-
-		// 平行光
-		for (let i = 0; i < directNumber; i++) {
-			const light2 = new DirectionalLight(directColor, directIntensity)
-			light2.position.set(Math.random() * 10 - 5, Math.random() * 10, Math.random() * 10 - 5)
-			light2.name = 'Directional Light ' + (i + 1)
-			this.scene.add(light2)
-			this.lights.push(light2)
-		}
-	}
-
-	showLights() {
-		this.lights.forEach((light) => (light.visible = true))
-	}
-
-	hideLights() {
-		this.lights.forEach((light) => (light.visible = false))
-	}
-	//#endregion Lights
-
-	//#region Display
-	private addSkeletonHelpers() {
-		this.skeletons.forEach((skeleton) => {
-			const object = skeleton.bones[0]?.parent
-			if (!object) return
-			const helper = new SkeletonHelper(object)
-			materialToArray<LineBasicMaterial>(helper.material).forEach((material) => (material.linewidth = 3))
-			this.scene?.add(helper)
-			this.skeletonHelpers.push(helper)
-		})
-	}
-
-	private removeSkeletonHelpers() {
-		this.skeletonHelpers.forEach((helper) => helper.parent?.remove(helper))
-		this.skeletonHelpers = []
+		// Load environment map
+		const { path } = this.environment
+		const envMap: Texture | null = path ? await this.loadEnvrionment(this.renderer, path, true) : null
+		const backgroundShader = this.getPlugin('Shaders.Background')
+		if (backgroundShader) !envMap && background ? backgroundShader.show() : backgroundShader.hide()
+		this.scene.background = background ? envMap : null
+		this.scene.environment = envMap
 	}
 
 	updateWireframe(wireframe: boolean) {
-		this.materials.forEach((material) => {
-			if (
-				// 显示基本材质的线框
-				material instanceof MeshBasicMaterial ||
-				// 显示基于光照的线框效果
-				material instanceof MeshLambertMaterial ||
-				// 适用于具有高光和反射的材质，支持线框显示
-				material instanceof MeshPhongMaterial ||
-				// 现代材质，支持物理渲染，也可以使用线框显示
-				material instanceof MeshStandardMaterial ||
-				// 与 MeshStandardMaterial 类似，但提供更多的物理特性，也支持线框显示
-				material instanceof MeshPhysicalMaterial
-			) {
-				material.wireframe = wireframe
-			}
-		})
+		for (const material of this.materials) {
+			// @ts-ignore
+			material.wireframe = wireframe
+		}
 	}
 
-	updateSkeleton(skeleton: boolean) {
-		const hasSkeleton = this.skeletonHelpers.length > 0
-		skeleton ? hasSkeleton || this.addSkeletonHelpers() : hasSkeleton && this.removeSkeletonHelpers()
-	}
-
-	updateTexturesColorSpace(colorSpace: string) {
-		this.materials.forEach((material) => {
-			if (
-				material instanceof MeshLambertMaterial ||
-				material instanceof MeshPhongMaterial ||
-				material instanceof MeshStandardMaterial ||
-				material instanceof MeshPhysicalMaterial
-			) {
-				this.updateTextureColorSpace(material, colorSpace)
-			}
-		})
-	}
-
-	updateTextureColorSpace(
-		material: MeshLambertMaterial | MeshPhongMaterial | MeshStandardMaterial | MeshPhysicalMaterial,
-		colorSpace: string
-	) {
+	updateTextureColorSpace(material: ThreeMaterialAndTexture, colorSpace: string) {
+		// TODO(https://github.com/mrdoob/three.js/pull/18235): Clean up.
+		material.depthWrite = !material.transparent
+		if (material.color && material.emissive && material.emissive.getHex() === 0x000000) {
+			// the self emissive color is the basic color
+			// Resolve the black model issue.
+			material.emissive = material.color
+		}
 		if (material.map) {
+			// set texture mapping color
 			material.map.colorSpace = colorSpace === 'sRGB' ? SRGBColorSpace : LinearSRGBColorSpace
 		}
 		if (material.emissiveMap) {
+			// set self emissive texture color
 			material.emissiveMap.colorSpace = colorSpace === 'sRGB' ? SRGBColorSpace : LinearSRGBColorSpace
+		} else if (material.map) {
+			// set self emissive texture color is the texture mapping color
+			material.emissiveMap = material.map
 		}
-		if (material.map || material.emissiveMap) {
-			material.needsUpdate = true
+		material.needsUpdate = true
+	}
+
+	updateTexturesColorSpace(colorSpace: string) {
+		for (const material of this.materials) {
+			this.updateTextureColorSpace(material as ThreeMaterialAndTexture, colorSpace)
 		}
 	}
 
 	updateOutputColorSpace(colorSpace: string) {
 		this.renderer.outputColorSpace = colorSpace === 'sRGB' ? SRGBColorSpace : LinearSRGBColorSpace
-		this.materials.forEach((material) => (material.needsUpdate = true))
+		for (const material of this.materials) {
+			material.needsUpdate = true
+		}
 	}
-	//#endregion Display
 }
+
+export type ThreeMaterialAndTexture =
+	// 显示基于光照的线框效果
+	| MeshLambertMaterial
+	// 适用于具有高光和反射的材质，支持线框显示
+	| MeshPhongMaterial
+	// 现代材质，支持物理渲染，也可以使用线框显示
+	| MeshStandardMaterial
+	// 与 MeshStandardMaterial 类似，但提供更多的物理特性，也支持线框显示
+	| MeshPhysicalMaterial
+
+export type ThreeMaterialAndWireframe =
+	// 显示基本材质的线框
+	MeshBasicMaterial | ThreeMaterialAndTexture
 
 export interface ThreeViewerOptions {
 	domElement?: HTMLElement
 	visibility?: 'hidden' | 'visible'
+	// kiosk mode
+	kiosk?: boolean
+	// size
 	width?: string | number
 	height?: string | number
-	kiosk?: boolean
-	// 渲染的生命周期(秒)
-	lifeTime?: number
+	// textures
 	textureColorSpace?: 'sRGB' | 'Linear'
 	outputColorSpace?: 'sRGB' | 'Linear'
-	// 插件
+	// render life time
+	lifeTime?: number
+	// plugins
 	plugins?: ThreePlugin[]
-	// 事件
-	events?: EventsObject
-	// 动画参数
+	// event listener
+	events?: ThreeEventsObject
+	// animate management
 	animator?: ThreeAnimatorOptions
-	// 初始定位，默认居中
+	// light management
+	lighter?: ThreeLighterOptions
+	// camera
 	position?: number[]
 	near?: number
-	// 渲染范围
 	far?: number
 	fov?: number
-	// 环境光
-	ambientColor?: number
-	ambientIntensity?: number
-	// 平行光
-	directNumber?: number
-	directColor?: number
-	directIntensity?: number
 }
 
 export { ThreeViewer }

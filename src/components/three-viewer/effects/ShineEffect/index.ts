@@ -1,22 +1,14 @@
-import {
-	BoxHelper,
-	Color,
-	ColorRepresentation,
-	Material,
-	Mesh,
-	MeshPhongMaterial,
-	MeshStandardMaterial,
-	Vector2
-} from 'three'
+import { BoxHelper, Color, ColorRepresentation, Mesh, MeshPhongMaterial, MeshStandardMaterial, Vector2 } from 'three'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader'
 import { ThreePlugin } from '../../core/Plugin'
+import { ThreeEventDispatcherParams } from '../../core/PluginDispatcher'
 import { ThreeViewer } from '../../core/Viewer'
-import { extend } from '../../utils/extend'
 import ThreeMaterialUtils from '../../utils/Material'
+import { extend } from '../../utils/extend'
 
 class ThreeShineEffect extends ThreePlugin {
 	static Options: ThreeShineEffectOptions = {
@@ -32,6 +24,7 @@ class ThreeShineEffect extends ThreePlugin {
 	options = {} as Required<ThreeShineEffectOptions>
 
 	private mesh?: Mesh
+	private materials!: (MeshStandardMaterial | MeshPhongMaterial)[]
 	private boxHelper?: BoxHelper
 
 	private composer!: EffectComposer
@@ -86,7 +79,7 @@ class ThreeShineEffect extends ThreePlugin {
 	}
 
 	// @overwrite
-	update(): void {}
+	update() {}
 
 	// @overwrite
 	render() {
@@ -100,17 +93,15 @@ class ThreeShineEffect extends ThreePlugin {
 
 		const { selectedBoxColor } = this.options
 
-		ThreeMaterialUtils.materialToArray(this.mesh.material).forEach((material: Material) => {
-			if (material instanceof MeshStandardMaterial || material instanceof MeshPhongMaterial) {
-				if (material.emissive) {
-					// @ts-ignore private _emissiveHex
-					material._emissiveHex = material._emissiveHex || material.emissive.getHex()
-					material.emissive.set(selectedBoxColor)
-				} else {
-					material.emissive = new Color(selectedBoxColor)
-				}
+		for (const material of this.materials) {
+			if (material.emissive) {
+				// @ts-ignore private _emissiveHex
+				material._emissiveHex = material._emissiveHex || material.emissive.getHex()
+				material.emissive.set(selectedBoxColor)
+			} else {
+				material.emissive = new Color(selectedBoxColor)
 			}
-		})
+		}
 
 		if (this.outlinePass) {
 			this.outlinePass.selectedObjects = [this.mesh]
@@ -127,13 +118,13 @@ class ThreeShineEffect extends ThreePlugin {
 	// @overwrite
 	hide() {
 		if (this.mesh) {
-			ThreeMaterialUtils.materialToArray(this.mesh.material).forEach((material: Material) => {
+			for (const material of this.materials) {
 				// @ts-ignore private _emissiveHex
 				if (material._emissiveHex) {
 					// @ts-ignore private _emissiveHex
 					material.emissive.set(material._emissiveHex)
 				}
-			})
+			}
 		}
 
 		if (this.outlinePass) {
@@ -161,10 +152,12 @@ class ThreeShineEffect extends ThreePlugin {
 	}
 
 	// @overwrite
-	capture(object?: Mesh) {
-		if (!object || object !== this.mesh) this.clear()
-		if (object) {
-			this.setMesh(object)
+	capture(object?: ThreeEventDispatcherParams) {
+		if (!object || object.mesh !== this.mesh) {
+			this.clear()
+		}
+		if (object && object.mesh) {
+			this.setMesh(object.mesh)
 			this.show()
 		}
 	}
@@ -175,6 +168,13 @@ class ThreeShineEffect extends ThreePlugin {
 
 	setMesh(mesh: Mesh) {
 		this.mesh = mesh
+		this.materials = []
+		const materials = ThreeMaterialUtils.materialToArray(this.mesh.material)
+		for (const material of materials) {
+			if (material instanceof MeshStandardMaterial || material instanceof MeshPhongMaterial) {
+				this.materials.push(material)
+			}
+		}
 	}
 }
 
@@ -188,3 +188,4 @@ export interface ThreeShineEffectOptions {
 }
 
 export { ThreeShineEffect }
+

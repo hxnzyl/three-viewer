@@ -1,13 +1,16 @@
 import type { GUI, GUIController, GUIParams } from 'dat.gui'
+import { Camera, Mesh } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { ThreeEnvironments } from '../../config/Environments'
 import { ThreePlugin } from '../../core/Plugin'
+import { ThreeEventDispatcherParams } from '../../core/PluginDispatcher'
 import { ThreeViewer } from '../../core/Viewer'
 import { ThreeBackgroundShader } from '../../shaders/BackgroundShader'
 import { AnyObject, BooleanObject } from '../../types'
 import { extend } from '../../utils/extend'
 import { ThreeAxesHelper } from '../AxesHelper'
 import { ThreeGridHelper } from '../GridHelper'
+import { ThreeSkeletonHelper } from '../SkeletonHelper'
 import './gui.css'
 
 class ThreeGUIHelper extends ThreePlugin {
@@ -61,30 +64,41 @@ class ThreeGUIHelper extends ThreePlugin {
 
 		const viewer = this.viewer
 		const { renderer, controls, options } = viewer
-		const backShader = viewer.getPlugin('Shaders.Background') as ThreeBackgroundShader
+		const backgroundShader = viewer.getPlugin('Shaders.Background') as ThreeBackgroundShader
 		const gridHelper = viewer.getPlugin('Helpers.Grid') as ThreeGridHelper
 		const axesHelper = viewer.getPlugin('Helpers.Axes') as ThreeAxesHelper
+		const skeletonHelper = viewer.getPlugin('Helpers.Skeleton') as ThreeSkeletonHelper
 
 		const state: AnyObject = {
 			wireframe: false,
-			skeleton: viewer.skeletons.length > 0,
-			environment: viewer.environment?.name || 'None',
+			skeleton: !!skeletonHelper,
 			grid: !!gridHelper,
 			axes: !!axesHelper,
-			background: !!backShader,
-			color1: backShader?.options.color1.getHex() || 0xffffff,
-			color2: backShader?.options.color2.getHex(),
+			environment: viewer.environment?.name || 'None',
+			background: !!backgroundShader,
+			color1: backgroundShader?.options.color1.getHex() || 0xffffff,
+			color2: backgroundShader?.options.color2.getHex(),
 			light: true,
 			playAll: false
 		}
 
-		//#region Plugins
-		const pluginsFolder = gui.addFolder('Plguins')
-		pluginsFolder.add(state, 'wireframe').onChange(() => viewer.updateWireframe(state.wireframe))
-		pluginsFolder.add(state, 'skeleton').onChange(() => viewer.updateSkeleton(state.skeleton))
-		gridHelper && pluginsFolder.add(state, 'grid').onChange((value) => (value ? gridHelper.show() : gridHelper.hide()))
-		axesHelper && pluginsFolder.add(state, 'axes').onChange((value) => (value ? axesHelper.show() : axesHelper.hide()))
-		//#endregion Plugins
+		//#region Helpers
+		const helpersFolder = gui.addFolder('Helpers')
+		skeletonHelper &&
+			helpersFolder.add(state, 'skeleton').onChange((value) => (value ? skeletonHelper.show() : skeletonHelper.hide()))
+		gridHelper && helpersFolder.add(state, 'grid').onChange((value) => (value ? gridHelper.show() : gridHelper.hide()))
+		axesHelper && helpersFolder.add(state, 'axes').onChange((value) => (value ? axesHelper.show() : axesHelper.hide()))
+		//#endregion Helpers
+
+		//#region Shaders
+		const shadersFolder = gui.addFolder('Shaders')
+		backgroundShader &&
+			shadersFolder.add(state, 'background').onChange((value) => (value ? backgroundShader.show() : backgroundShader.hide()))
+		backgroundShader &&
+			shadersFolder.addColor(state, 'color1').onChange(() => viewer.updateBackground(state.color1, state.color2))
+		backgroundShader &&
+			shadersFolder.addColor(state, 'color2').onChange(() => viewer.updateBackground(state.color1, state.color2))
+		//#endregion Helpers
 
 		//#region Controls
 		const controlsFolder = gui.addFolder('Controls')
@@ -109,6 +123,7 @@ class ThreeGUIHelper extends ThreePlugin {
 
 		//#region Textures
 		const texturesFolder = gui.addFolder('Textures')
+		helpersFolder.add(state, 'wireframe').onChange(() => viewer.updateWireframe(state.wireframe))
 		texturesFolder.add(renderer, 'toneMappingExposure', 0, 2)
 		texturesFolder
 			.add(options, 'textureColorSpace', ['sRGB', 'Linear'])
@@ -117,15 +132,10 @@ class ThreeGUIHelper extends ThreePlugin {
 			.add(options, 'outputColorSpace', ['sRGB', 'Linear'])
 			.onChange((value) => viewer.updateOutputColorSpace(value))
 		const environmentNames = ThreeEnvironments.map((env) => env.name)
-		texturesFolder
-			.add(state, 'background')
-			.onChange(() => viewer.updateEnvironment(state.environment, state.background))
+		texturesFolder.add(state, 'background').onChange(() => viewer.updateEnvironment(state.environment, state.background))
 		texturesFolder
 			.add(state, 'environment', environmentNames)
 			.onChange(() => viewer.updateEnvironment(state.environment, state.background))
-		texturesFolder.addColor(state, 'color1').onChange(() => viewer.updateBackground(state.color1, state.color2))
-		backShader &&
-			texturesFolder.addColor(state, 'color2').onChange(() => viewer.updateBackground(state.color1, state.color2))
 		//#endregion Textures
 
 		//#region Animations
@@ -164,51 +174,47 @@ class ThreeGUIHelper extends ThreePlugin {
 
 	// @overwrite
 	render() {
-		this.stats.update()
+		this.stats?.update()
 	}
 
 	// @overwrite
-	update() {
+	update({ cameras, morphs }: ThreeEventDispatcherParams) {
 		this.createDomElement()
-		this.updateCamerasFolder()
+		this.updateCamerasFolder(cameras)
 		this.updateLightsFolder()
-		this.updateMorphsFolder()
+		this.updateMorphsFolder(morphs)
 		this.updateAnimationsFolder()
 		this.show()
 	}
 
-	updateCamerasFolder() {
+	updateCamerasFolder(cameras?: Camera[]) {
 		if (this.cameraCtrl) this.cameraCtrl.remove()
 
-		const { cameras } = this.viewer
-		if (cameras.length == 0) {
+		if (!cameras || cameras.length == 0) {
 			this.camerasFolder?.hide()
 		} else {
 			this.camerasFolder.domElement.style.display = ''
-			this.cameraCtrl = this.camerasFolder.add(
-				this.state,
-				'camera',
-				['[default]'].concat(cameras.map((mesh) => mesh.name))
-			)
+			this.cameraCtrl = this.camerasFolder.add(this.state, 'camera', ['[default]'].concat(cameras.map((mesh) => mesh.name)))
 			this.cameraCtrl.onChange((name) => this.viewer.updateCamera(name))
 		}
 	}
 
 	updateLightsFolder() {
-		this.lightCtrls.forEach((ctrl) => ctrl.remove())
+		for (const ctrl of this.lightCtrls) {
+			ctrl.remove()
+		}
+
 		this.lightCtrls = []
 
-		const three = this.viewer
-		const { lights } = three
+		const { lighter } = this.viewer
+		const { lights } = lighter
 
-		if (lights.length == 0) {
+		if (!lights || lights.length == 0) {
 			this.lightsFolder.hide()
 		} else {
 			const colors: AnyObject[] = []
 
-			this.lightsFolder
-				.add(this.state, 'light', true)
-				.onChange((value) => (value ? three.showLights() : three.hideLights()))
+			this.lightsFolder.add(this.state, 'light', true).onChange((value) => (value ? lighter.show() : lighter.hide()))
 
 			for (const key in lights) {
 				const light = lights[key]
@@ -224,12 +230,14 @@ class ThreeGUIHelper extends ThreePlugin {
 		}
 	}
 
-	updateMorphsFolder() {
-		this.morphCtrls.forEach((ctrl) => ctrl.remove())
+	updateMorphsFolder(morphs?: Mesh[]) {
+		for (const ctrl of this.morphCtrls) {
+			ctrl.remove()
+		}
+
 		this.morphCtrls = []
 
-		const { morphs } = this.viewer
-		if (morphs.length == 0) {
+		if (!morphs || morphs.length == 0) {
 			this.morphsFolder.hide()
 		} else {
 			for (const mesh of morphs) {
@@ -248,7 +256,10 @@ class ThreeGUIHelper extends ThreePlugin {
 	}
 
 	updateAnimationsFolder() {
-		this.animCtrls.forEach((ctrl) => ctrl.remove())
+		for (const ctrl of this.animCtrls) {
+			ctrl.remove()
+		}
+
 		this.animCtrls = []
 
 		const three = this.viewer
@@ -271,7 +282,7 @@ class ThreeGUIHelper extends ThreePlugin {
 					for (let ctrl of ctrls) {
 						ctrl.setValue(value)
 					}
-					value ? animator.playAllClips() : animator.pauseAllClips()
+					value ? animator.playAll() : animator.pauseAll()
 					lock = false
 				})
 			)
@@ -282,7 +293,7 @@ class ThreeGUIHelper extends ThreePlugin {
 					this.animationsFolder.add(status, clip.name).onChange((value) => {
 						if (lock) return
 						lock = true
-						value ? animator.playClip(clip) : animator.pauseClip(clip)
+						value ? animator.play(clip) : animator.pause(clip)
 						this.animCtrls[1].setValue(runningActions.length == clips.length)
 						lock = false
 					})
@@ -304,7 +315,7 @@ class ThreeGUIHelper extends ThreePlugin {
 	}
 
 	// @overwrite
-	onResize() {}
+	resize() {}
 
 	// @overwrite
 	dispose() {
@@ -322,3 +333,4 @@ export interface ThreeGUIHelperOptions extends GUIParams {
 }
 
 export { ThreeGUIHelper }
+

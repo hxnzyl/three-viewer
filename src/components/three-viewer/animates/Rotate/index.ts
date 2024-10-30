@@ -1,10 +1,10 @@
 import { Vector3 } from 'three'
 import { Easing } from 'three/examples/jsm/libs/tween.module'
-import { ThreeAnimate, ThreeAnimateOptions } from '../../core/Animate'
 import { ThreeViewer } from '../../core/Viewer'
 import { NumberObject } from '../../types'
-import { extend } from '../../utils/extend'
 import ThreeVectorUtils from '../../utils/Vector'
+import { extend } from '../../utils/extend'
+import { ThreeAnimate, ThreeAnimateOptions } from '../Animate'
 import { ThreeRotateAnimateMap, ThreeRotateIdAnimate } from './Map'
 
 class ThreeRotateAnimate extends ThreeAnimate {
@@ -40,7 +40,7 @@ class ThreeRotateAnimate extends ThreeAnimate {
 
 		const { camera, controls, objectCenter, objectDistance } = viewer
 		const { position, up } = camera
-		const { target, enabled } = controls
+		const { target } = controls
 
 		// reconcile by rotate ID
 		if (rotateId && !toPosition && !toUp) {
@@ -62,7 +62,7 @@ class ThreeRotateAnimate extends ThreeAnimate {
 			(!toUp || ThreeVectorUtils.areVector3Close(up, toUp))
 		) {
 			console.warn('ThreeViewer.ThreeRotateAnimate: same or undefined position and up.')
-			this.dispatchEvent({ type: 'complete' })
+			this.dispatchEvent({ type: 'onComplete' })
 			return
 		}
 
@@ -71,6 +71,11 @@ class ThreeRotateAnimate extends ThreeAnimate {
 		const fromUp = toUp && up.clone()
 
 		controls.enabled = false
+
+		const stop = () => {
+			controls.enabled = true
+			this.dispatchEvent({ type: 'onStop' })
+		}
 
 		return {
 			from: { t: 0 },
@@ -84,9 +89,10 @@ class ThreeRotateAnimate extends ThreeAnimate {
 				}
 				target.lerpVectors(fromTarget, toTarget, news.t)
 			},
+			stop,
 			complete: () => {
-				controls.enabled = enabled
-				this.dispatchEvent({ type: 'complete' })
+				stop()
+				this.dispatchEvent({ type: 'onComplete' })
 			}
 		}
 	}
@@ -100,3 +106,4 @@ export interface ThreeRotateAnimateOptions extends ThreeAnimateOptions {
 }
 
 export { ThreeRotateAnimate }
+

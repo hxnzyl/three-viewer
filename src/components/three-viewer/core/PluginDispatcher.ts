@@ -1,8 +1,19 @@
-import { EventDispatcher } from 'three'
-import { EventDispatcherObject, MethodNames } from '../types'
+import {
+    AnimationClip,
+    Camera,
+    ColorRepresentation,
+    EventDispatcher,
+    Group,
+    Light,
+    Mesh,
+    Skeleton,
+    Texture
+} from 'three'
+import { ThreeBackgroundShaderUniforms } from '../shaders/BackgroundShader'
+import { AnyObject } from '../types'
 import { ThreePlugin, ThreePlugins } from './Plugin'
 
-class ThreePluginDispatcher extends EventDispatcher<EventDispatcherObject> {
+class ThreePluginDispatcher extends EventDispatcher<ThreeEventDispatcherObject> {
 	private plugins: ThreePlugins = {}
 
 	getPlugin(name: string) {
@@ -27,20 +38,27 @@ class ThreePluginDispatcher extends EventDispatcher<EventDispatcherObject> {
 	}
 
 	addPlugins(plugins: ThreePlugin[]) {
-		plugins.forEach((plugin) => this.addPlugin(plugin))
-	}
-
-	removePlugin(name: string | ThreePlugin) {
-		if (typeof name === 'string') {
-			delete this.plugins[name]
-		} else {
-			delete this.plugins[name.name]
+		for (const plugin of plugins) {
+			this.addPlugin(plugin)
 		}
 	}
 
-	dispatchPlugin(name: MethodNames<ThreePlugin>, args?: any) {
-		for (let key in this.plugins) {
-			this.plugins[key][name](args)
+	removePlugin(name: string | ThreePlugin) {
+		const pluginName = name instanceof ThreePlugin ? name.name : name + ''
+		const plugin = this.plugins[pluginName]
+		if (plugin) {
+			plugin.dispose()
+			delete this.plugins[pluginName]
+		}
+	}
+
+	dispatchPlugin(name: ThreeEventDispatcherMethod, params?: ThreeEventDispatcherParams) {
+		try {
+			for (let key in this.plugins) {
+				this.plugins[key][name](params)
+			}
+		} catch (exp) {
+			console.error(exp)
 		}
 		if (name === 'dispose') {
 			this.plugins = {}
@@ -48,4 +66,27 @@ class ThreePluginDispatcher extends EventDispatcher<EventDispatcherObject> {
 	}
 }
 
+export type ThreeEventsObject<K = any> = AnyObject<(...args: any[]) => void, K>
+
+export type ThreeEventDispatcherMethod = 'update' | 'render' | 'dispose' | 'resize' | 'capture'
+
+export type ThreeEventDispatcherObject<K = any> = AnyObject<ThreeEventDispatcherParams, K>
+
+export interface ThreeEventDispatcherParams {
+	error?: any
+	event?: any
+	group?: Group
+	skeletons?: Skeleton[]
+	texture?: Texture
+	mesh?: Mesh
+	morphs?: Mesh[]
+	lights?: Light[]
+	cameras?: Camera[]
+	clips?: AnimationClip[]
+	color1?: ColorRepresentation
+	color2?: ColorRepresentation
+	uniforms?: ThreeBackgroundShaderUniforms
+}
+
 export { ThreePluginDispatcher }
+

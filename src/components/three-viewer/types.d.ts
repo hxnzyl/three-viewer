@@ -14,10 +14,6 @@ export type NumberObject<K = any> = AnyObject<number, K>
 
 export type BooleanObject<K = any> = AnyObject<boolean, K>
 
-export type EventsObject<K = any> = AnyObject<(...args: any[]) => void, K>
-
-export type EventDispatcherObject<K = any> = AnyObject<{ data?: any }, K>
-
 export type MethodNames<T> = {
 	[K in keyof T]: T[K] extends Function ? K : never
 }[keyof T]
