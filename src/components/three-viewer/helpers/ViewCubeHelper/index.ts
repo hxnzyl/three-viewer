@@ -77,7 +77,7 @@ class ThreeViewCubeHelper extends ThreePlugin {
 
 	// @overwrite
 	render() {
-		this.cubeRender?.render(this.viewer.camera)
+		this.viewer && this.cubeRender?.render(this.viewer.camera)
 	}
 
 	// @overwrite
@@ -97,11 +97,12 @@ class ThreeViewCubeHelper extends ThreePlugin {
 
 	// @overwrite
 	dispose() {
-		if (!this.cubeRender) return
-		this.cubeData.dispose()
-		this.cubeEditor.dispose()
-		this.cubeRender.dispose()
-		this.cubeRender = null as any
+		if (this.viewer) {
+			this.cubeData.dispose()
+			this.cubeEditor.dispose()
+			this.cubeRender.dispose()
+			this.viewer = undefined
+		}
 	}
 }
 

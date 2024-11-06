@@ -79,6 +79,32 @@ class ThreeShineEffect extends ThreePlugin {
 	}
 
 	// @overwrite
+	capture(object?: ThreeEventDispatcherParams) {
+		if (!object || object.mesh !== this.mesh) {
+			this.clear()
+		}
+		if (object && object.mesh) {
+			this.setMesh(object.mesh)
+			this.show()
+		}
+	}
+
+	getMesh() {
+		return this.mesh
+	}
+
+	setMesh(mesh: Mesh) {
+		this.mesh = mesh
+		this.materials = []
+		const materials = ThreeMaterialUtils.materialToArray(this.mesh.material)
+		for (const material of materials) {
+			if (material instanceof MeshStandardMaterial || material instanceof MeshPhongMaterial) {
+				this.materials.push(material)
+			}
+		}
+	}
+
+	// @overwrite
 	update() {}
 
 	// @overwrite
@@ -89,7 +115,7 @@ class ThreeShineEffect extends ThreePlugin {
 
 	// @overwrite
 	show() {
-		if (!this.mesh) return
+		if (!this.mesh || !this.viewer) return
 
 		const { selectedBoxColor } = this.options
 
@@ -117,6 +143,8 @@ class ThreeShineEffect extends ThreePlugin {
 
 	// @overwrite
 	hide() {
+		if (!this.viewer) return
+
 		if (this.mesh) {
 			for (const material of this.materials) {
 				// @ts-ignore private _emissiveHex
@@ -144,36 +172,10 @@ class ThreeShineEffect extends ThreePlugin {
 
 	// @overwrite
 	dispose() {
-		if (this.composer) {
+		if (this.viewer) {
 			this.clear()
 			this.composer.dispose()
-			this.composer = null as any
-		}
-	}
-
-	// @overwrite
-	capture(object?: ThreeEventDispatcherParams) {
-		if (!object || object.mesh !== this.mesh) {
-			this.clear()
-		}
-		if (object && object.mesh) {
-			this.setMesh(object.mesh)
-			this.show()
-		}
-	}
-
-	getMesh() {
-		return this.mesh
-	}
-
-	setMesh(mesh: Mesh) {
-		this.mesh = mesh
-		this.materials = []
-		const materials = ThreeMaterialUtils.materialToArray(this.mesh.material)
-		for (const material of materials) {
-			if (material instanceof MeshStandardMaterial || material instanceof MeshPhongMaterial) {
-				this.materials.push(material)
-			}
+			this.viewer = undefined
 		}
 	}
 }
@@ -188,4 +190,3 @@ export interface ThreeShineEffectOptions {
 }
 
 export { ThreeShineEffect }
-

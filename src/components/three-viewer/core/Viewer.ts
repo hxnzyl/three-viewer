@@ -1,32 +1,32 @@
 import { EventListenerQueue } from 'events-ns'
 import {
-    Box3,
-    Cache,
-    Camera,
-    Color,
-    Group,
-    Light,
-    LinearSRGBColorSpace,
-    Material,
-    Mesh,
-    MeshBasicMaterial,
-    MeshLambertMaterial,
-    MeshPhongMaterial,
-    MeshPhysicalMaterial,
-    MeshStandardMaterial,
-    Object3D,
-    Object3DEventMap,
-    PerspectiveCamera,
-    Plane,
-    Raycaster,
-    SRGBColorSpace,
-    Scene,
-    Skeleton,
-    SkinnedMesh,
-    Texture,
-    Vector2,
-    Vector3,
-    WebGLRenderer
+	Box3,
+	Cache,
+	Camera,
+	Color,
+	Group,
+	Light,
+	LinearSRGBColorSpace,
+	Material,
+	Mesh,
+	MeshBasicMaterial,
+	MeshLambertMaterial,
+	MeshPhongMaterial,
+	MeshPhysicalMaterial,
+	MeshStandardMaterial,
+	Object3D,
+	Object3DEventMap,
+	PerspectiveCamera,
+	Plane,
+	Raycaster,
+	SRGBColorSpace,
+	Scene,
+	Skeleton,
+	SkinnedMesh,
+	Texture,
+	Vector2,
+	Vector3,
+	WebGLRenderer
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
@@ -97,11 +97,9 @@ class ThreeViewer extends ThreeLoader {
 		super()
 		this.setOptions(options)
 		this.animator = new ThreeAnimator(this.options.animator)
-		this.addPlugin(this.animator)
 		this.listener = new EventListenerQueue([])
 		this.animator.initialize(this)
 		this.lighter = new ThreeLighter(this.options.lighter)
-		this.addPlugin(this.lighter)
 		// Bind internal event, Transfer this
 		this.renderBinded = this.render.bind(this)
 		this.activateBinded = this.activate.bind(this)
@@ -111,10 +109,7 @@ class ThreeViewer extends ThreeLoader {
 		this.setScene()
 		this.setCamera()
 		this.setControls()
-		this.addPlugins(this.options.plugins)
 		this.setEvent()
-		// Unified addition of events
-		this.listener.addEventListener()
 	}
 
 	setOptions(options?: ThreeViewerOptions) {
@@ -130,13 +125,15 @@ class ThreeViewer extends ThreeLoader {
 				const x = (event.clientX / this.width) * 2 - 1,
 					y = -(event.clientY / this.height) * 2 + 1,
 					{ objects, point } = this.capture(new Vector2(x, y))
+				let mesh
 				for (const object3d of objects) {
 					if (object3d.object instanceof Mesh) {
-						this.dispatchPlugin('capture', { mesh: object3d.object })
+						mesh = object3d.object
 						break
 					}
 				}
-				if (point) {
+				this.dispatchPlugin('capture', { mesh })
+				if (!mesh && point) {
 					this.animator.animate(
 						new ThreeWalkAnimate({
 							position: point
@@ -144,15 +141,8 @@ class ThreeViewer extends ThreeLoader {
 					)
 				}
 			}
-			// move: (event: MouseEvent) => {
-			// 	// 获取鼠标位置
-			// 	const X = ((event.clientX / this.width) * 2 - 1) * 100
-			// 	const Y = (-(event.clientY / this.height) * 2 + 1) * 100
-			// 	// 将相机聚焦到这个点
-			// 	const { x, y, z } = this.camera.position
-			// 	this.renderLookAt.push([X + x, Y + y, z - 50])
-			// }
 		})
+
 		// listening visibility change
 		this.listener.push(
 			document,
@@ -166,6 +156,7 @@ class ThreeViewer extends ThreeLoader {
 			},
 			false
 		)
+
 		// listening the window resize
 		this.listener.push(
 			window,
@@ -186,14 +177,24 @@ class ThreeViewer extends ThreeLoader {
 			},
 			false
 		)
+
 		// add events from options
-		const { events } = this.options
+		const { events, plugins } = this.options
 		for (const type in events) {
 			this.addEventListener(type, events[type])
 		}
+
 		// Add loader event
 		this.addEventListener('loadScene', this.update)
 		this.addEventListener('loadObject', ({ group }) => group && this.add(group))
+
+		// Add Plugins
+		this.addPlugin(this.animator)
+		this.addPlugin(this.lighter)
+		this.addPlugins(plugins)
+
+		// Unified addition of events
+		this.listener.addEventListener()
 	}
 
 	private createDomElement() {
@@ -242,10 +243,11 @@ class ThreeViewer extends ThreeLoader {
 
 	private setControls() {
 		this.controls = new OrbitControls(this.camera, this.renderer.domElement)
+		this.controls.enabled = true
 		// this.controls = new TrackballControls(this.camera, this.renderer.domElement)
 		// this.controls.rotateSpeed = 3
 		// this.controls.autoRotate = false
-		this.controls.screenSpacePanning = true
+		// this.controls.screenSpacePanning = true
 		// up
 		// this.controls.minPolarAngle = 0
 		// down
@@ -263,7 +265,7 @@ class ThreeViewer extends ThreeLoader {
 		const { near, far, fov } = this.options
 		const aspect = this.width / this.height
 		this.camera = new PerspectiveCamera(fov, aspect, near, far)
-		this.camera.name = 'ThreeViewer_PerspectiveCamera'
+		this.camera.name = 'ThreeViewer_Camera_Default'
 		this.scene.add(this.camera)
 	}
 
@@ -272,21 +274,7 @@ class ThreeViewer extends ThreeLoader {
 		if (!group) return
 
 		this.object = group
-		this.objectBox3 = new Box3().setFromObject(group)
-		this.objectCenter = this.objectBox3.getCenter(new Vector3())
-		this.objectSize = this.objectBox3.getSize(new Vector3())
-		this.objectDistance = Math.max(this.objectSize.x, this.objectSize.y, this.objectSize.z) * 3
-
-		const { position } = this.options
-		if (position) {
-			this.camera.position.fromArray(position)
-			this.camera.lookAt(new Vector3())
-		} else {
-			this.camera.position.set(this.objectCenter.x, this.objectCenter.y, this.objectCenter.z + this.objectDistance)
-			this.camera.lookAt(this.objectCenter)
-		}
-
-		this.controls.enabled = true
+		this.updateObject()
 
 		this.meshes = []
 		this.materials = []
@@ -376,7 +364,7 @@ class ThreeViewer extends ThreeLoader {
 
 			this.renderer.render(this.scene, this.camera)
 
-			this.controls?.update()
+			this.controls.update()
 
 			this.dispatchPlugin('render')
 		}
@@ -450,6 +438,23 @@ class ThreeViewer extends ThreeLoader {
 
 	updateCamera(name: string) {
 		// @TODO
+	}
+
+	updateObject() {
+		if (this.object) {
+			this.objectBox3 = new Box3().setFromObject(this.object)
+			this.objectCenter = this.objectBox3.getCenter(new Vector3())
+			this.objectSize = this.objectBox3.getSize(new Vector3())
+			this.objectDistance = Math.max(this.objectSize.x, this.objectSize.y, this.objectSize.z) * 3
+			const { position } = this.options
+			if (position) {
+				this.camera.position.fromArray(position)
+				this.camera.lookAt(new Vector3())
+			} else {
+				this.camera.position.set(this.objectCenter.x, this.objectCenter.y, this.objectCenter.z + this.objectDistance)
+				this.camera.lookAt(this.objectCenter)
+			}
+		}
 	}
 
 	updateBackground(color1: string | number, color2: string | number) {
@@ -559,4 +564,3 @@ export interface ThreeViewerOptions {
 }
 
 export { ThreeViewer }
-

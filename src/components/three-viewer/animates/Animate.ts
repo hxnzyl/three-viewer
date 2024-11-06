@@ -1,16 +1,23 @@
 import { EventDispatcher } from 'three'
 import { ThreeEventDispatcherObject, ThreeEventsObject } from '../core/PluginDispatcher'
-import { ThreeViewer } from '../core/Viewer'
 import { AnyObject } from '../types'
+import { ThreeAnimator } from './Animator'
 
 abstract class ThreeAnimate extends EventDispatcher<ThreeEventDispatcherObject> {
+	id!: string
 	options!: ThreeAnimateOptions
 
 	abstract setOptions(options?: ThreeAnimateOptions): void
 
 	abstract setEvent(): void
 
-	abstract reconcile(viewer: ThreeViewer): ThreeAnimateReconcile | void | undefined
+	abstract start(animator?: ThreeAnimator): void
+
+	abstract stop(animator?: ThreeAnimator): void
+
+	abstract update(animator?: ThreeAnimator): void
+
+	abstract reconcile(animator: ThreeAnimator): void
 }
 
 export interface ThreeAnimateOptions {
@@ -23,11 +30,10 @@ export interface ThreeAnimateOptions {
 export interface ThreeAnimateReconcile<T = any> {
 	from: AnyObject
 	to: AnyObject
-    duration?: number
+	duration?: number
 	stop?: () => void
 	update?: (object: T) => void
 	complete?: (object: T) => void
 }
 
 export { ThreeAnimate }
-

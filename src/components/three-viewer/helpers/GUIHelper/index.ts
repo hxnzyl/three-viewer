@@ -30,8 +30,8 @@ class ThreeGUIHelper extends ThreePlugin {
 	lightCtrls: GUIController<object>[] = []
 	cameraCtrl!: GUIController<object>
 
-	domElement!: HTMLElement
 	gui!: GUI
+	domElement?: HTMLElement
 	animationsFolder!: GUI
 	morphsFolder!: GUI
 	camerasFolder!: GUI
@@ -62,7 +62,7 @@ class ThreeGUIHelper extends ThreePlugin {
 		const { GUI: DatGUI } = require('dat.gui')
 		const gui: GUI = new DatGUI(guiParams)
 
-		const viewer = this.viewer
+		const viewer = this.viewer!
 		const { renderer, controls, options } = viewer
 		const backgroundShader = viewer.getPlugin('Shaders.Background') as ThreeBackgroundShader
 		const gridHelper = viewer.getPlugin('Helpers.Grid') as ThreeGridHelper
@@ -93,7 +93,9 @@ class ThreeGUIHelper extends ThreePlugin {
 		//#region Shaders
 		const shadersFolder = gui.addFolder('Shaders')
 		backgroundShader &&
-			shadersFolder.add(state, 'background').onChange((value) => (value ? backgroundShader.show() : backgroundShader.hide()))
+			shadersFolder
+				.add(state, 'background')
+				.onChange((value) => (value ? backgroundShader.show() : backgroundShader.hide()))
 		backgroundShader &&
 			shadersFolder.addColor(state, 'color1').onChange(() => viewer.updateBackground(state.color1, state.color2))
 		backgroundShader &&
@@ -132,7 +134,9 @@ class ThreeGUIHelper extends ThreePlugin {
 			.add(options, 'outputColorSpace', ['sRGB', 'Linear'])
 			.onChange((value) => viewer.updateOutputColorSpace(value))
 		const environmentNames = ThreeEnvironments.map((env) => env.name)
-		texturesFolder.add(state, 'background').onChange(() => viewer.updateEnvironment(state.environment, state.background))
+		texturesFolder
+			.add(state, 'background')
+			.onChange(() => viewer.updateEnvironment(state.environment, state.background))
 		texturesFolder
 			.add(state, 'environment', environmentNames)
 			.onChange(() => viewer.updateEnvironment(state.environment, state.background))
@@ -179,6 +183,7 @@ class ThreeGUIHelper extends ThreePlugin {
 
 	// @overwrite
 	update({ cameras, morphs }: ThreeEventDispatcherParams) {
+		if (!this.viewer) return
 		this.createDomElement()
 		this.updateCamerasFolder(cameras)
 		this.updateLightsFolder()
@@ -194,8 +199,12 @@ class ThreeGUIHelper extends ThreePlugin {
 			this.camerasFolder?.hide()
 		} else {
 			this.camerasFolder.domElement.style.display = ''
-			this.cameraCtrl = this.camerasFolder.add(this.state, 'camera', ['[default]'].concat(cameras.map((mesh) => mesh.name)))
-			this.cameraCtrl.onChange((name) => this.viewer.updateCamera(name))
+			this.cameraCtrl = this.camerasFolder.add(
+				this.state,
+				'camera',
+				['[default]'].concat(cameras.map((mesh) => mesh.name))
+			)
+			this.cameraCtrl.onChange((name) => this.viewer!.updateCamera(name))
 		}
 	}
 
@@ -206,7 +215,7 @@ class ThreeGUIHelper extends ThreePlugin {
 
 		this.lightCtrls = []
 
-		const { lighter } = this.viewer
+		const { lighter } = this.viewer!
 		const { lights } = lighter
 
 		if (!lights || lights.length == 0) {
@@ -262,7 +271,7 @@ class ThreeGUIHelper extends ThreePlugin {
 
 		this.animCtrls = []
 
-		const three = this.viewer
+		const three = this.viewer!
 		const { animator } = three
 		const { mixer, clips, runningActions } = animator
 		if (!mixer || clips.length == 0) {
@@ -306,12 +315,16 @@ class ThreeGUIHelper extends ThreePlugin {
 
 	// @overwrite
 	show() {
-		this.domElement.style.visibility = ''
+		if (this.domElement) {
+			this.domElement.style.visibility = ''
+		}
 	}
 
 	// @overwrite
 	hide() {
-		this.domElement.style.visibility = 'hidden'
+		if (this.domElement) {
+			this.domElement.style.visibility = 'hidden'
+		}
 	}
 
 	// @overwrite
@@ -319,10 +332,10 @@ class ThreeGUIHelper extends ThreePlugin {
 
 	// @overwrite
 	dispose() {
-		if (this.gui) {
-			this.viewer.domElement.removeChild(this.domElement)
+		if (this.viewer) {
+			this.domElement && this.viewer.domElement.removeChild(this.domElement)
 			this.domElement = null as any
-			this.gui = null as any
+			this.viewer = undefined
 		}
 	}
 }
@@ -334,4 +347,3 @@ export interface ThreeGUIHelperOptions extends GUIParams {
 }
 
 export { ThreeGUIHelper }
-

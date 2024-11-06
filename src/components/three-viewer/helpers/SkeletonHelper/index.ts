@@ -13,7 +13,7 @@ class ThreeSkeletonHelper extends ThreePlugin {
 
 	name = 'Helpers.Skeleton'
 	options = {} as Required<ThreeSkeletonHelperOptions>
-	private skeletonHelper?: Group
+	private skeletonHelper!: Group
 
 	// @overwrite
 	constructor(options?: ThreeSkeletonHelperOptions) {
@@ -52,16 +52,12 @@ class ThreeSkeletonHelper extends ThreePlugin {
 
 	// @overwrite
 	show() {
-		if (this.skeletonHelper) {
-			this.viewer.scene.add(this.skeletonHelper)
-		}
+		this.viewer?.scene.add(this.skeletonHelper)
 	}
 
 	// @overwrite
 	hide() {
-		if (this.skeletonHelper) {
-			this.viewer.scene.remove(this.skeletonHelper)
-		}
+		this.viewer?.scene.remove(this.skeletonHelper)
 	}
 
 	// @overwrite
@@ -69,10 +65,10 @@ class ThreeSkeletonHelper extends ThreePlugin {
 
 	// @overwrite
 	dispose() {
-		if (this.skeletonHelper) {
+		if (this.viewer) {
 			this.hide()
 			this.skeletonHelper.clear()
-			this.skeletonHelper = undefined
+			this.viewer = undefined
 		}
 	}
 }
@@ -82,4 +78,3 @@ export interface ThreeSkeletonHelperOptions {
 }
 
 export { ThreeSkeletonHelper }
-

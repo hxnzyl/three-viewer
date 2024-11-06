@@ -27,6 +27,7 @@ class ThreeViewCubeEditorHelper {
 		ThreeEventUtils.addMouseEventListener({
 			viewer,
 			dom: domElement,
+			stop: true,
 			// click of rotate
 			click: (event: MouseEvent) => {
 				const componentId = this.getComponentId(this.canvasToNormalized(event.offsetX, event.offsetY))
@@ -91,4 +92,3 @@ class ThreeViewCubeEditorHelper {
 }
 
 export { ThreeViewCubeEditorHelper }
-

@@ -10,7 +10,7 @@ class ThreeCameraHelper extends ThreePlugin {
 	name = 'Helpers.Grid'
 	options = {} as Required<ThreeCameraHelperOptions>
 
-	private cameraHelper?: CameraHelper
+	private cameraHelper!: CameraHelper
 	private camera!: PerspectiveCamera
 
 	// @overwrite
@@ -37,15 +37,16 @@ class ThreeCameraHelper extends ThreePlugin {
 
 	// @overwrite
 	render() {
-        this.cameraHelper?.update()
+		this.cameraHelper?.update()
 	}
 
 	// @overwrite
 	update() {
+		if (!this.viewer) return
 		const { camera, controls } = this.viewer
 		this.camera.position.copy(camera.position)
 		this.camera.up.copy(camera.up)
-        this.camera.quaternion.copy(camera.quaternion)
+		this.camera.quaternion.copy(camera.quaternion)
 		this.camera.lookAt(controls.target)
 		this.camera.updateProjectionMatrix()
 		this.show()
@@ -53,14 +54,14 @@ class ThreeCameraHelper extends ThreePlugin {
 
 	// @overwrite
 	show() {
-		if (this.cameraHelper) {
+		if (this.viewer) {
 			this.viewer.scene.add(this.cameraHelper)
 		}
 	}
 
 	// @overwrite
 	hide() {
-		if (this.cameraHelper) {
+		if (this.viewer) {
 			this.viewer.scene.remove(this.cameraHelper)
 		}
 	}
@@ -70,10 +71,10 @@ class ThreeCameraHelper extends ThreePlugin {
 
 	// @overwrite
 	dispose() {
-		if (this.cameraHelper) {
+		if (this.viewer) {
 			this.hide()
 			this.cameraHelper.dispose()
-			this.cameraHelper = undefined
+			this.viewer = undefined
 		}
 	}
 }
@@ -81,4 +82,3 @@ class ThreeCameraHelper extends ThreePlugin {
 export interface ThreeCameraHelperOptions {}
 
 export { ThreeCameraHelper }
-

@@ -53,10 +53,16 @@ class ThreeAxesHelper extends ThreePlugin {
 	}
 
 	// @overwrite
-	render() {}
+	render() {
+		if (this.viewer) {
+			const { object } = this.viewer
+			object && this.helper.position.copy(object.position)
+		}
+	}
 
 	// @overwrite
 	update() {
+		if (!this.viewer) return
 		const { x, y, z } = this.viewer.objectSize
 		const { scale, children } = this.helper
 		if (scale.x !== x * 2) {
@@ -72,12 +78,12 @@ class ThreeAxesHelper extends ThreePlugin {
 
 	// @overwrite
 	show() {
-		this.viewer.scene.add(this.helper)
+		this.viewer?.scene.add(this.helper)
 	}
 
 	// @overwrite
 	hide() {
-		this.viewer.scene.remove(this.helper)
+		this.viewer?.scene.remove(this.helper)
 	}
 
 	// @overwrite
@@ -88,6 +94,7 @@ class ThreeAxesHelper extends ThreePlugin {
 		if (!this.helper) return
 		this.helper.dispose()
 		this.helper = null as any
+		this.viewer = undefined
 	}
 }
 
@@ -97,4 +104,3 @@ export interface ThreeAxesHelperOptions {
 }
 
 export { ThreeAxesHelper }
-

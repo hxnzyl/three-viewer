@@ -3,7 +3,7 @@ import { ThreeEventDispatcherParams, ThreePluginDispatcher } from './PluginDispa
 import { ThreeViewer } from './Viewer'
 
 abstract class ThreePlugin {
-	viewer!: ThreeViewer
+	viewer?: ThreeViewer
 
 	abstract name: string
 	abstract options: AnyObject
@@ -30,4 +30,3 @@ abstract class ThreePlugin {
 export type ThreePlugins = AnyObject<ThreePlugin>
 
 export { ThreePlugin as ThreePlugin }
-

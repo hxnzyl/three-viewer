@@ -1,10 +1,10 @@
 import { Vector3 } from 'three'
-import { Easing } from 'three/examples/jsm/libs/tween.module'
-import { ThreeViewer } from '../../core/Viewer'
+import { Easing, Tween } from 'three/examples/jsm/libs/tween.module'
 import { NumberObject } from '../../types'
 import ThreeVectorUtils from '../../utils/Vector'
 import { extend } from '../../utils/extend'
 import { ThreeAnimate, ThreeAnimateOptions } from '../Animate'
+import { ThreeAnimator } from '../Animator'
 import { ThreeRotateAnimateMap, ThreeRotateIdAnimate } from './Map'
 
 class ThreeRotateAnimate extends ThreeAnimate {
@@ -16,6 +16,7 @@ class ThreeRotateAnimate extends ThreeAnimate {
 
 	name = 'Animates.Rotate'
 	options: ThreeRotateAnimateOptions = {}
+	tween?: Tween<NumberObject>
 
 	constructor(options?: ThreeRotateAnimateOptions) {
 		super()
@@ -35,10 +36,30 @@ class ThreeRotateAnimate extends ThreeAnimate {
 		}
 	}
 
-	reconcile(viewer: ThreeViewer) {
+	start(): void {
+		if (this.tween) {
+			this.tween.start()
+			this.dispatchEvent({ type: 'onStart' })
+		}
+	}
+
+	stop(): void {
+		if (this.tween) {
+			this.tween = undefined
+			this.dispatchEvent({ type: 'onStop' })
+		}
+	}
+
+	update(): void {
+		this.tween?.update()
+	}
+
+	reconcile(animator: ThreeAnimator) {
 		let { rotateId, position: toPosition, up: toUp } = this.options
 
-		const { camera, controls, objectCenter, objectDistance } = viewer
+		animator.viewer.updateObject()
+
+		const { camera, controls, objectCenter, objectDistance } = animator.viewer
 		const { position, up } = camera
 		const { target } = controls
 
@@ -70,30 +91,39 @@ class ThreeRotateAnimate extends ThreeAnimate {
 		const fromPosition = toPosition && position.clone()
 		const fromUp = toUp && up.clone()
 
-		controls.enabled = false
+		const update = (news: NumberObject) => {
+			if (fromPosition && toPosition) {
+				position.lerpVectors(fromPosition, toPosition, news.t)
+			}
+			if (fromUp && toUp) {
+				up.lerpVectors(fromUp, toUp, news.t)
+			}
+			target.lerpVectors(fromTarget, toTarget, news.t)
+		}
 
 		const stop = () => {
 			controls.enabled = true
-			this.dispatchEvent({ type: 'onStop' })
+			this.stop()
 		}
 
-		return {
-			from: { t: 0 },
-			to: { t: 1 },
-			update(news: NumberObject) {
-				if (fromPosition && toPosition) {
-					position.lerpVectors(fromPosition, toPosition, news.t)
-				}
-				if (fromUp && toUp) {
-					up.lerpVectors(fromUp, toUp, news.t)
-				}
-				target.lerpVectors(fromTarget, toTarget, news.t)
-			},
-			stop,
-			complete: () => {
-				stop()
-				this.dispatchEvent({ type: 'onComplete' })
-			}
+		const complete = () => {
+			// Required
+			delete animator.animates[this.id]
+			stop()
+			this.dispatchEvent({ type: 'onComplete' })
+		}
+
+		const { autoStart, duration, easing } = this.options
+
+		const tween = new Tween({ t: 0 }).to({ t: 1 }, duration).easing(easing)
+
+		this.id = tween.getId() + ''
+		this.tween = tween.onUpdate(update).onStop(stop).onComplete(complete)
+
+		if (autoStart) {
+			controls.enabled = false
+
+			this.start()
 		}
 	}
 }
@@ -106,4 +136,3 @@ export interface ThreeRotateAnimateOptions extends ThreeAnimateOptions {
 }
 
 export { ThreeRotateAnimate }
-

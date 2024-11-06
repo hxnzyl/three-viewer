@@ -1,5 +1,4 @@
 import { AnimationAction, AnimationClip, AnimationMixer, Clock, Vector3 } from 'three'
-import { Tween } from 'three/examples/jsm/libs/tween.module'
 import { ThreePlugin } from '../core/Plugin'
 import { ThreeEventDispatcherParams } from '../core/PluginDispatcher'
 import { ThreeViewer } from '../core/Viewer'
@@ -16,8 +15,8 @@ class ThreeAnimator extends ThreePlugin {
 	clock: Clock
 	mixer?: AnimationMixer
 
-	tweens: AnyObject<Tween<AnyObject>, string | number> = {}
 	clips: AnimationClip[] = []
+	animates: AnyObject<ThreeAnimate, string | number> = {}
 	actions: AnyObject<AnimationAction> = {}
 	runningActions: string[] = []
 
@@ -35,37 +34,11 @@ class ThreeAnimator extends ThreePlugin {
 		this.options = extend(true, {}, ThreeAnimator.Options, options || {})
 	}
 
-	animate(animater: ThreeAnimate) {
-		const reconcile = animater.reconcile(this.viewer)
-		if (!reconcile) return this
-
-		const { autoStart, duration: durationOpt, easing } = animater.options
-		const { from, to, duration = durationOpt, update, stop, complete } = reconcile
-
-		const tween = new Tween(from).to(to, duration).easing(easing)
-		const tweenId = tween.getId()
-		this.tweens[tweenId] = tween
-
-		tween
-			.onUpdate(update)
-			.onStop(stop)
-			.onComplete((object: AnyObject) => {
-				delete this.tweens[tweenId]
-				complete && complete(object)
-			})
-
-		if (autoStart) {
-			tween.start()
-		}
-
-		return this
-	}
-
 	// @overwrite
 	render() {
 		// update users animates
-		for (const key in this.tweens) {
-			this.tweens[key].update()
+		for (const key in this.animates) {
+			this.animates[key].update(this)
 		}
 		// from created to current seconds
 		this.mixer?.update(this.clock.getDelta())
@@ -91,6 +64,12 @@ class ThreeAnimator extends ThreePlugin {
 				this.actions[clip.name] = this.mixer.clipAction(clip)
 			}
 		}
+	}
+
+	animate(animater: ThreeAnimate) {
+		animater.reconcile(this)
+		this.animates[animater.id] = animater
+		return this
 	}
 
 	// @overwrite
@@ -147,8 +126,8 @@ class ThreeAnimator extends ThreePlugin {
 
 	playAll(users?: boolean) {
 		if (users) {
-			for (const key in this.tweens) {
-				this.tweens[key].start()
+			for (const key in this.animates) {
+				this.animates[key].start(this)
 			}
 		} else if (this.mixer) {
 			this.runningActions = this.clips.map((clip) => (this.mixer?.clipAction(clip).play(), clip.name))
@@ -159,8 +138,8 @@ class ThreeAnimator extends ThreePlugin {
 
 	pauseAll(users?: boolean) {
 		if (users) {
-			for (const key in this.tweens) {
-				this.tweens[key].stop()
+			for (const key in this.animates) {
+				this.animates[key].stop(this)
 			}
 		} else if (this.mixer) {
 			this.mixer.stopAllAction()
@@ -173,10 +152,10 @@ class ThreeAnimator extends ThreePlugin {
 	// @overwrite
 	clear(users?: boolean) {
 		if (users) {
-			for (const key in this.tweens) {
-				this.tweens[key].stop()
+			for (const key in this.animates) {
+				this.animates[key].stop()
 			}
-			this.tweens = {}
+			this.animates = {}
 		} else if (this.mixer) {
 			this.mixer.stopAllAction().uncacheRoot(this.mixer.getRoot())
 			this.clips = []
@@ -206,4 +185,3 @@ export interface ThreeAnimateOptions {
 }
 
 export { ThreeAnimator }
-

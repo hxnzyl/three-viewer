@@ -1,19 +1,21 @@
-import { Vector3 } from 'three'
+import { Object3D, Vector3 } from 'three'
 import { Easing } from 'three/examples/jsm/libs/tween.module'
-import { ThreeViewer } from '../../core/Viewer'
 import { extend } from '../../utils/extend'
 import { ThreeAnimate, ThreeAnimateOptions } from '../Animate'
-import { NumberObject } from './../../types.d'
+import { ThreeAnimator } from '../Animator'
 
 class ThreeWalkAnimate extends ThreeAnimate {
 	static Options: ThreeWalkAnimateOptions = {
 		autoStart: true,
 		duration: 1000,
+		speed: 0.2,
 		easing: Easing.Linear.None
 	}
 
 	name = 'Animates.Walk'
-	options: ThreeWalkAnimateOptions = {}
+	options = {} as Required<ThreeWalkAnimateOptions>
+	object?: Object3D
+	moving = false
 
 	constructor(options?: ThreeWalkAnimateOptions) {
 		super()
@@ -33,71 +35,93 @@ class ThreeWalkAnimate extends ThreeAnimate {
 		}
 	}
 
-	reconcile(viewer: ThreeViewer) {
-		const { object, controls, camera, animator } = viewer
-		if (!object) return
+	reconcile(animator: ThreeAnimator) {
+		this.object = animator.viewer.object
+		if (this.options.autoStart) {
+			this.start(animator)
+		}
+	}
 
-		// 目标位置
+	start(animator?: ThreeAnimator): void {
+		if (!this.object) return
+
+		const { position, quaternion } = this.object
 		const { position: toPosition } = this.options
-		if (!toPosition) return
-		const { position, quaternion } = object
-
-		// 当前位置
-		const fromPosition = position.clone()
-
-		// 计算移动距离
-		const distance = fromPosition.distanceTo(toPosition) * controls.getDistance()
-
-		// 当前距离与目标距离之间的距离差值小于等于1则目标点在当前点的位置,不需要移动
-		if (distance <= 1) return
 
 		// 旋转模型到目标点的方向(指定目标点相对于当前目标点的相对角度)
 		const direction = new Vector3().subVectors(toPosition, position).normalize()
-
 		// 使用Quaternion来设置模型的朝向
 		quaternion.setFromUnitVectors(new Vector3(0, 0, 1), direction)
 
-		// 距离远执行跑，近执行走
-		const isFar = distance > 300
-		const duration = isFar ? distance * 250 : distance * 500
-        console.log(distance)
-
-		// 停止所有用户动画
-		animator.pauseAll(true)
-
-		// 停止闲置
-		animator.pause('Idle')
-
-		// 开始奔跑或走
-		animator.play(isFar ? 'Running' : 'Walking', isFar ? 1 : 2)
-
-		// 冻结控制器
-		controls.enabled = false
-
-		const stop = () => {
-			controls.enabled = true
-			this.dispatchEvent({ type: 'onStop' })
+		if (animator) {
+			// 停止所有用户动画
+			animator.pauseAll(true)
+			// 停止闲置
+			animator.pause('Idle')
+			// 开始奔跑或走
+			const fromX = position.x
+			const fromZ = position.z
+			const toX = toPosition.x
+			const toZ = toPosition.z
+			const diffX = Math.abs(fromX - toX)
+			const diffZ = Math.abs(fromZ - toZ)
+			const distance = Math.sqrt(diffX * diffX + diffZ * diffZ)
+			const isFar = distance > 10
+			if (isFar) {
+				animator.play('Running', 1)
+			} else {
+				animator.play('Walking', 2)
+			}
 		}
 
-		return {
-			from: { t: 0 },
-			to: { t: 1 },
-			duration,
-			update(news: NumberObject) {
-				position.lerpVectors(fromPosition, toPosition, news.t)
-			},
-			stop,
-			complete: () => {
-				stop()
-				this.dispatchEvent({ type: 'onComplete' })
-			}
+		this.moving = true
+	}
+
+	stop(animator?: ThreeAnimator): void {
+		if (this.moving) {
+			animator?.pauseAll().play('Idle', 2)
+			this.moving = false
+			this.object = undefined
+		}
+	}
+
+	update(animator?: ThreeAnimator) {
+		if (!this.object || !this.moving) return
+
+		const { position } = this.object
+		const { position: toPosition, speed } = this.options
+
+		// Calcuate Distance
+		const fromX = position.x
+		const fromZ = position.z
+		const toX = toPosition.x
+		const toZ = toPosition.z
+		const diffX = Math.abs(fromX - toX)
+		const diffZ = Math.abs(fromZ - toZ)
+		const distance = Math.sqrt(diffX * diffX + diffZ * diffZ)
+
+		const multiplierX = fromX > toX ? -1 : 1
+		const multiplierZ = fromZ > toZ ? -1 : 1
+
+		// Update position.
+		position.x += speed * (diffX / distance) * multiplierX
+		position.z += speed * (diffZ / distance) * multiplierZ
+
+		// Move Complete
+		if (
+			position.x <= toX + speed &&
+			position.x >= toX - speed &&
+			position.z <= toZ + speed &&
+			position.z >= toZ - speed
+		) {
+			this.stop(animator)
 		}
 	}
 }
 
 export interface ThreeWalkAnimateOptions extends ThreeAnimateOptions {
 	position?: Vector3
+	speed?: number
 }
 
 export { ThreeWalkAnimate }
-

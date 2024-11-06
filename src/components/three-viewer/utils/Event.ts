@@ -2,10 +2,12 @@ import { ThreeViewer } from '../core/Viewer'
 
 class ThreeEventUtils {
 	static addMouseEventListener(options: ThreeMouseEventOptions) {
-		const { viewer, dom, click, move, drag = false } = options
+		const { viewer, dom, click, move, prevent, stop, drag = false } = options
 		let lock = false
 		if (move || click) {
 			const onDown = (downEvent: MouseEvent) => {
+				prevent && downEvent.preventDefault()
+				stop && downEvent.stopPropagation()
 				if (lock) return
 				lock = true
 				if (!click) return
@@ -41,6 +43,8 @@ class ThreeEventUtils {
 export interface ThreeMouseEventOptions {
 	viewer: ThreeViewer
 	dom: HTMLElement
+	prevent?: boolean
+	stop?: boolean
 	click?: false | ((event: MouseEvent, from: 'down' | 'up' | 'click') => void | boolean)
 	move?: false | ((event: MouseEvent) => void)
 	drag?: boolean

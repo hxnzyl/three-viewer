@@ -14,7 +14,7 @@ class ThreeGridHelper extends ThreePlugin {
 
 	name = 'Helpers.Grid'
 	options = {} as Required<ThreeGridHelperOptions>
-	private gridHelper?: Group
+	private gridHelper!: Group
 
 	// @overwrite
 	constructor(options?: ThreeGridHelperOptions) {
@@ -45,16 +45,12 @@ class ThreeGridHelper extends ThreePlugin {
 
 	// @overwrite
 	show() {
-		if (this.gridHelper) {
-			this.viewer.scene.add(this.gridHelper)
-		}
+		this.viewer?.scene.add(this.gridHelper)
 	}
 
 	// @overwrite
 	hide() {
-		if (this.gridHelper) {
-			this.viewer.scene.remove(this.gridHelper)
-		}
+		this.viewer?.scene.remove(this.gridHelper)
 	}
 
 	// @overwrite
@@ -62,10 +58,10 @@ class ThreeGridHelper extends ThreePlugin {
 
 	// @overwrite
 	dispose() {
-		if (this.gridHelper) {
+		if (this.viewer) {
 			this.hide()
 			this.gridHelper.clear()
-			this.gridHelper = undefined
+			this.viewer = undefined
 		}
 	}
 }
@@ -78,4 +74,3 @@ export interface ThreeGridHelperOptions {
 }
 
 export { ThreeGridHelper }
-

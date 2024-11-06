@@ -1,13 +1,13 @@
 import {
-    AnimationClip,
-    Camera,
-    ColorRepresentation,
-    EventDispatcher,
-    Group,
-    Light,
-    Mesh,
-    Skeleton,
-    Texture
+	AnimationClip,
+	Camera,
+	ColorRepresentation,
+	EventDispatcher,
+	Group,
+	Light,
+	Mesh,
+	Skeleton,
+	Texture
 } from 'three'
 import { ThreeBackgroundShaderUniforms } from '../shaders/BackgroundShader'
 import { AnyObject } from '../types'
@@ -65,7 +65,6 @@ class ThreePluginDispatcher extends EventDispatcher<ThreeEventDispatcherObject> 
 					this.plugins[key][name](params)
 				}
 			}
-
 		} catch (exp) {
 			console.error(exp)
 		}
@@ -95,4 +94,3 @@ export interface ThreeEventDispatcherParams {
 }
 
 export { ThreePluginDispatcher }
-
