@@ -21,14 +21,14 @@ class ThreeLoader extends ThreePluginDispatcher {
 					(gltf: GLTF) => {
 						const data: ThreeEventDispatcherParams = { group: gltf.scene || gltf.scenes[0], clips: gltf.animations }
 						resolve(data)
-						this.dispatchEvent({ type: 'onLoadScene', ...data })
+						this.dispatchEvent({ type: 'loadScene', ...data })
 					},
-					(data) => {
-						this.dispatchEvent({ type: 'onProgressScene', data })
+					(event) => {
+						this.dispatchEvent({ type: 'progressScene', event })
 					},
 					(error) => {
 						resolved ? resolve(null) : reject()
-						this.dispatchEvent({ type: 'onErrorScene', error })
+						this.dispatchEvent({ type: 'errorScene', error })
 					}
 				)
 		})
@@ -40,14 +40,14 @@ class ThreeLoader extends ThreePluginDispatcher {
 				url,
 				(group: Group) => {
 					resolve(group)
-					this.dispatchEvent({ type: 'onLoadObject', group })
+					this.dispatchEvent({ type: 'loadObject', group })
 				},
 				(event) => {
-					this.dispatchEvent({ type: 'onProgressObject', event })
+					this.dispatchEvent({ type: 'progressObject', event })
 				},
 				(error) => {
 					resolved ? resolve(null) : reject()
-					this.dispatchEvent({ type: 'onErrorObject', error })
+					this.dispatchEvent({ type: 'errorObject', error })
 				}
 			)
 		})
@@ -65,15 +65,15 @@ class ThreeLoader extends ThreePluginDispatcher {
 					const envMap = pmremGenerator.fromEquirectangular(texture).texture
 					pmremGenerator.dispose()
 					texture.dispose()
-					this.dispatchEvent({ type: 'onLoadTexture', texture: envMap })
+					this.dispatchEvent({ type: 'loadTexture', texture: envMap })
 					resolve(envMap)
 				},
-				(data) => {
-					this.dispatchEvent({ type: 'onProgressTexture', data })
+				(event) => {
+					this.dispatchEvent({ type: 'progressTexture', event })
 				},
 				(error) => {
 					resolved ? resolve(null) : reject()
-					this.dispatchEvent({ type: 'onErrorTexture', error })
+					this.dispatchEvent({ type: 'errorTexture', error })
 				}
 			)
 		})

@@ -179,11 +179,8 @@ class ThreeViewer extends ThreeLoader {
 			this.addEventListener(type, events[type])
 		}
 		// Add loader event
-		this.addEventListener('onLoadScene', this.update)
-		this.addEventListener('onLoadObject', ({ group }: ThreeEventDispatcherParams) => {
-			group && this.scene.add(group)
-			this.activate()
-		})
+		this.addEventListener('loadScene', this.update)
+		this.addEventListener('loadObject', ({ group }) => group && this.add(group))
 	}
 
 	private createDomElement() {
@@ -336,6 +333,11 @@ class ThreeViewer extends ThreeLoader {
 				return object3d.object
 			}
 		}
+	}
+
+	add(object: Object3D) {
+		this.scene.add(object)
+		this.activate()
 	}
 
 	show() {
