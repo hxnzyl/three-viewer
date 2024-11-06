@@ -14,7 +14,7 @@ import { AnyObject } from '../types'
 import { ThreePlugin, ThreePlugins } from './Plugin'
 
 class ThreePluginDispatcher extends EventDispatcher<ThreeEventDispatcherObject> {
-	private plugins: ThreePlugins = {}
+	plugins: ThreePlugins = {}
 
 	getPlugin(name: string) {
 		return this.plugins[name]
@@ -54,14 +54,20 @@ class ThreePluginDispatcher extends EventDispatcher<ThreeEventDispatcherObject> 
 
 	dispatchPlugin(name: ThreeEventDispatcherMethod, params?: ThreeEventDispatcherParams) {
 		try {
-			for (let key in this.plugins) {
-				this.plugins[key][name](params)
+			if (name === 'dispose') {
+				const plugins = this.plugins
+				this.plugins = {}
+				for (let key in plugins) {
+					plugins[key][name]()
+				}
+			} else {
+				for (let key in this.plugins) {
+					this.plugins[key][name](params)
+				}
 			}
+
 		} catch (exp) {
 			console.error(exp)
-		}
-		if (name === 'dispose') {
-			this.plugins = {}
 		}
 	}
 }

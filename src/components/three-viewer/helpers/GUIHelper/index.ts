@@ -319,9 +319,10 @@ class ThreeGUIHelper extends ThreePlugin {
 
 	// @overwrite
 	dispose() {
-		if (this.domElement) {
+		if (this.gui) {
 			this.viewer.domElement.removeChild(this.domElement)
 			this.domElement = null as any
+			this.gui = null as any
 		}
 	}
 }

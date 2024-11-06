@@ -5,49 +5,35 @@ class ThreeEventUtils {
 		const { viewer, dom, click, move, drag = false } = options
 		let lock = false
 		if (move || click) {
-			viewer.listener.push(
-				dom,
-				'mousedown',
-				function down(downEvent: MouseEvent) {
-					if (lock) return
-					lock = true
-					if (!click) return
-					const draggable = move && drag && click(downEvent, 'down')
-					viewer.activate()
-					draggable && dom.addEventListener('mousemove', move, false)
-					window.addEventListener(
-						'mouseup',
-						function up(upEvent: MouseEvent) {
-							if (!lock) return
-							draggable && dom.removeEventListener('mousemove', move)
-							window.removeEventListener('mouseup', up)
-							if (downEvent.offsetX == upEvent.offsetX && downEvent.offsetY == upEvent.offsetY) {
-								// no move
-								click(downEvent, 'click')
-							} else {
-								// moved
-								draggable && click(upEvent, 'up')
-							}
-							lock = false
-						},
-						false
-					)
-				},
-				false
-			)
+			const onDown = (downEvent: MouseEvent) => {
+				if (lock) return
+				lock = true
+				if (!click) return
+				const draggable = move && drag && click(downEvent, 'down')
+				viewer.activate()
+				draggable && dom.addEventListener('mousemove', move, false)
+				const onUp = (upEvent: MouseEvent) => {
+					window.removeEventListener('mouseup', onUp)
+					draggable && dom.removeEventListener('mousemove', move)
+					if (!lock) return
+					// no move, moved
+					downEvent.offsetX == upEvent.offsetX && downEvent.offsetY == upEvent.offsetY
+						? click(downEvent, 'click')
+						: draggable && click(upEvent, 'up')
+					lock = false
+				}
+				window.addEventListener('mouseup', onUp, false)
+			}
+			viewer.listener.push(dom, 'mousedown', onDown, false)
 		}
 		// only move, and exclude drag
 		if (move && !drag) {
-			viewer.listener.push(
-				dom,
-				'mousemove',
-				function (moveEvent: MouseEvent) {
-					if (lock) return
-					viewer.activate()
-					move(moveEvent)
-				},
-				false
-			)
+			const onMove = (moveEvent: MouseEvent) => {
+				if (lock) return
+				viewer.activate()
+				move(moveEvent)
+			}
+			viewer.listener.push(dom, 'mousemove', onMove, false)
 		}
 	}
 }

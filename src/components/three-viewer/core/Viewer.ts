@@ -17,6 +17,7 @@ import {
     Object3D,
     Object3DEventMap,
     PerspectiveCamera,
+    Plane,
     Raycaster,
     SRGBColorSpace,
     Scene,
@@ -30,6 +31,7 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
 import { ThreeAnimator, ThreeAnimatorOptions } from '../animates/Animator'
+import { ThreeWalkAnimate } from '../animates/Walk'
 import { ThreeEnvironment, ThreeEnvironments } from '../config/Environments'
 import ThreeEventUtils from '../utils/Event'
 import ThreeMaterialUtils from '../utils/Material'
@@ -58,7 +60,7 @@ class ThreeViewer extends ThreeLoader {
 		// position: undefined,
 		fov: 75,
 		near: 0.1,
-		far: 1000
+		far: 2000
 	}
 
 	private renderTimer?: number
@@ -120,26 +122,37 @@ class ThreeViewer extends ThreeLoader {
 	}
 
 	private setEvent() {
-		if (this.hasPlugin('Effects.Selected')) {
-			ThreeEventUtils.addMouseEventListener({
-				viewer: this,
-				dom: this.domElement,
-				// 点击模型捕获
-				click: (event: MouseEvent) => {
-					this.dispatchPlugin('capture', {
-						mesh: this.capture(new Vector2((event.clientX / this.width) * 2 - 1, -(event.clientY / this.height) * 2 + 1))
-					})
+		ThreeEventUtils.addMouseEventListener({
+			viewer: this,
+			dom: this.domElement,
+			// 点击模型捕获
+			click: (event: MouseEvent) => {
+				const x = (event.clientX / this.width) * 2 - 1,
+					y = -(event.clientY / this.height) * 2 + 1,
+					{ objects, point } = this.capture(new Vector2(x, y))
+				for (const object3d of objects) {
+					if (object3d.object instanceof Mesh) {
+						this.dispatchPlugin('capture', { mesh: object3d.object })
+						break
+					}
 				}
-				// move: (event: MouseEvent) => {
-				// 	// 获取鼠标位置
-				// 	const X = ((event.clientX / this.width) * 2 - 1) * 100
-				// 	const Y = (-(event.clientY / this.height) * 2 + 1) * 100
-				// 	// 将相机聚焦到这个点
-				// 	const { x, y, z } = this.camera.position
-				// 	this.renderLookAt.push([X + x, Y + y, z - 50])
-				// }
-			})
-		}
+				if (point) {
+					this.animator.animate(
+						new ThreeWalkAnimate({
+							position: point
+						})
+					)
+				}
+			}
+			// move: (event: MouseEvent) => {
+			// 	// 获取鼠标位置
+			// 	const X = ((event.clientX / this.width) * 2 - 1) * 100
+			// 	const Y = (-(event.clientY / this.height) * 2 + 1) * 100
+			// 	// 将相机聚焦到这个点
+			// 	const { x, y, z } = this.camera.position
+			// 	this.renderLookAt.push([X + x, Y + y, z - 50])
+			// }
+		})
 		// listening visibility change
 		this.listener.push(
 			document,
@@ -250,7 +263,7 @@ class ThreeViewer extends ThreeLoader {
 		const { near, far, fov } = this.options
 		const aspect = this.width / this.height
 		this.camera = new PerspectiveCamera(fov, aspect, near, far)
-		this.camera.name = 'ThreeViewer_Camera_Default'
+		this.camera.name = 'ThreeViewer_PerspectiveCamera'
 		this.scene.add(this.camera)
 	}
 
@@ -323,16 +336,18 @@ class ThreeViewer extends ThreeLoader {
 	}
 
 	capture(vector: Vector2) {
-		this.raycaster = this.raycaster || new Raycaster()
-		this.raycaster.setFromCamera(vector, this.camera)
+		const raycaster = new Raycaster()
+		raycaster.setFromCamera(vector, this.camera)
 		// gltf文件需要深度查找
 		// const objects = this.raycaster.intersectObjects(this.scene.children, true)
-		const objects = this.raycaster.intersectObject(this.scene, true)
-		for (const object3d of objects) {
-			if (object3d.object instanceof Mesh) {
-				return object3d.object
-			}
-		}
+		const objects = raycaster.intersectObject(this.scene, true)
+		// 创建平面 设置平面法向量Vector3 和 原点到平面距离(这里表示无限平面以Y轴为标准平铺在threejs场景中的)
+		const plane = new Plane(new Vector3(0, 1, 0), 0)
+		// 接受射线和平面的交点(也就是鼠标点击的3D坐标)
+		const point = new Vector3()
+		// 计算射线和平面的交点
+		raycaster.ray.intersectPlane(plane, point)
+		return { objects, point }
 	}
 
 	add(object: Object3D) {

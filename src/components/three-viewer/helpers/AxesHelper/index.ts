@@ -45,7 +45,6 @@ class ThreeAxesHelper extends ThreePlugin {
 		zTextMesh.rotation.x = -Math.PI / 2
 		zTextMesh.position.set(0, 0, 0.5)
 		this.helper.add(zTextMesh)
-        
 	}
 
 	// @overwrite

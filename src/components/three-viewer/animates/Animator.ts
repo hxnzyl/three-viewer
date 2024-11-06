@@ -39,8 +39,8 @@ class ThreeAnimator extends ThreePlugin {
 		const reconcile = animater.reconcile(this.viewer)
 		if (!reconcile) return this
 
-		const { from, to, update, stop, complete } = reconcile
-		const { autoStart, duration, easing } = animater.options
+		const { autoStart, duration: durationOpt, easing } = animater.options
+		const { from, to, duration = durationOpt, update, stop, complete } = reconcile
 
 		const tween = new Tween(from).to(to, duration).easing(easing)
 		const tweenId = tween.getId()
@@ -121,11 +121,11 @@ class ThreeAnimator extends ThreePlugin {
 		return clip && this.isRunning(clip.name) ? clip : undefined
 	}
 
-	play(name: string | AnimationClip) {
+	play(name: string | AnimationClip, timeScale: number = 1) {
 		if (this.mixer) {
 			const clip = this.find(name)
 			if (clip) {
-				this.mixer.clipAction(clip).reset().play()
+				this.mixer.clipAction(clip).setEffectiveTimeScale(timeScale).setEffectiveWeight(1).fadeIn(0.2).play()
 				this.runningActions.push(clip.name)
 				this.viewer.activate()
 			}
@@ -137,7 +137,7 @@ class ThreeAnimator extends ThreePlugin {
 		if (this.mixer) {
 			const clip = this.findIfRunning(name)
 			if (clip) {
-				this.mixer.clipAction(clip).reset().stop()
+				this.mixer.clipAction(clip).fadeOut(0.2).stop()
 				this.runningActions.splice(this.runningActions.indexOf(clip.name), 1)
 				this.runningActions.length || this.viewer.activate()
 			}
@@ -151,7 +151,7 @@ class ThreeAnimator extends ThreePlugin {
 				this.tweens[key].start()
 			}
 		} else if (this.mixer) {
-			this.runningActions = this.clips.map((clip) => (this.mixer?.clipAction(clip).reset().play(), clip.name))
+			this.runningActions = this.clips.map((clip) => (this.mixer?.clipAction(clip).play(), clip.name))
 			this.viewer.activate()
 		}
 		return this
@@ -189,7 +189,7 @@ class ThreeAnimator extends ThreePlugin {
 	// @overwrite
 	dispose() {
 		this.clear(true)
-        this.clear(false)
+		this.clear(false)
 	}
 }
 
