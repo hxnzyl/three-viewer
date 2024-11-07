@@ -12,6 +12,7 @@ class ThreeViewCubeEditorHelper {
 	private viewer: ThreeViewer
 	private raycaster: Raycaster
 	private componentId: string = ''
+	private walkAnimate: ThreeRotateAnimate
 
 	constructor(
 		domElement: HTMLElement,
@@ -24,6 +25,7 @@ class ThreeViewCubeEditorHelper {
 		this.camera = camera
 		this.viewer = viewer
 		this.raycaster = new Raycaster()
+		this.walkAnimate = new ThreeRotateAnimate()
 		ThreeEventUtils.addMouseEventListener({
 			viewer,
 			dom: domElement,
@@ -34,11 +36,8 @@ class ThreeViewCubeEditorHelper {
 				if (componentId && this.componentId) {
 					this.cubeData.getComponent(this.componentId)?.cancelHighlight()
 					this.componentId = ''
-					this.viewer.animator.pauseAll(true).animate(
-						new ThreeRotateAnimate({
-							rotateId: ThreeViewCubeDirectionMap[componentId]
-						})
-					)
+					this.walkAnimate.options.rotateId = ThreeViewCubeDirectionMap[componentId]
+					this.viewer.animator.pauseAll(true).animate(this.walkAnimate)
 				}
 			},
 			// move of capture
@@ -92,3 +91,4 @@ class ThreeViewCubeEditorHelper {
 }
 
 export { ThreeViewCubeEditorHelper }
+
