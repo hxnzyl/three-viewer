@@ -8,8 +8,8 @@ class ThreeGridHelper extends ThreePlugin {
 	static Options: ThreeGridHelperOptions = {
 		size: 200,
 		divisions: 10,
-		colorGrid: 0x999999,
-		colorCenterLine: 0xcccccc
+		colorGrid: 0x87ceeb,
+		colorCenterLine: 0xffffff
 	}
 
 	name = 'Helpers.Grid'
@@ -74,3 +74,4 @@ export interface ThreeGridHelperOptions {
 }
 
 export { ThreeGridHelper }
+

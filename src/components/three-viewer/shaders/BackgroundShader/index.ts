@@ -30,7 +30,7 @@ class ThreeBackgroundShader extends ThreePlugin {
 	}
 	static Options: ThreeBackgroundShaderOptions = {
 		color1: new Color(0xffffff),
-		color2: new Color(0x000000),
+		color2: new Color(0x87ceeb),
 		smooth: new Vector2(0.0, 1.0),
 		offset: new Vector2(0, 0),
 		scale: new Vector2(1, 1),

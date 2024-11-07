@@ -1,4 +1,13 @@
-import { Mesh, MeshToonMaterial, Object3D, Scene, TetrahedronGeometry, TorusGeometry, Vector3 } from 'three'
+import {
+    ColorRepresentation,
+    Mesh,
+    MeshToonMaterial,
+    Object3D,
+    Scene,
+    TetrahedronGeometry,
+    TorusGeometry,
+    Vector3
+} from 'three'
 import { Easing } from 'three/examples/jsm/libs/tween.module'
 import { extend } from '../../utils/extend'
 import { ThreeAnimate, ThreeAnimateOptions } from '../Animate'
@@ -9,7 +18,8 @@ class ThreeWalkAnimate extends ThreeAnimate {
 		autoStart: true,
 		duration: 1000,
 		speed: 0.2,
-		easing: Easing.Linear.None
+		easing: Easing.Linear.None,
+		indicatorColor: 0x87ceeb
 	}
 
 	name = 'Animates.Walk'
@@ -159,6 +169,7 @@ class ThreeWalkAnimate extends ThreeAnimate {
 export interface ThreeWalkAnimateOptions extends ThreeAnimateOptions {
 	position?: Vector3
 	speed?: number
+	indicatorColor?: ColorRepresentation
 }
 
 export { ThreeWalkAnimate }
