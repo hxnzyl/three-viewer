@@ -1,11 +1,11 @@
 import { Vector3 } from 'three'
 import { Easing, Tween } from 'three/examples/jsm/libs/tween.module'
-import { NumberObject } from '../../types'
-import ThreeVectorUtils from '../../utils/Vector'
-import { extend } from '../../utils/extend'
-import { ThreeAnimate, ThreeAnimateOptions } from '../Animate'
-import { ThreeAnimator } from '../Animator'
-import { ThreeRotateAnimateMap, ThreeRotateIdAnimate } from './Map'
+import { ThreeAnimate, ThreeAnimateOptions } from '../core/Animate'
+import { ThreeAnimator } from '../core/Animator'
+import { NumberObject } from '../types'
+import ThreeVectorUtils from '../utils/Vector'
+import { extend } from '../utils/extend'
+import { ThreeRotateAnimateMap, ThreeRotateIdAnimate } from './RotateAnimateMap'
 
 class ThreeRotateAnimate extends ThreeAnimate {
 	static Options: ThreeRotateAnimateOptions = {
@@ -17,6 +17,7 @@ class ThreeRotateAnimate extends ThreeAnimate {
 	name = 'Animates.Rotate'
 	options: ThreeRotateAnimateOptions = {}
 	tween?: Tween<NumberObject>
+	animator!: ThreeAnimator
 
 	constructor(options?: ThreeRotateAnimateOptions) {
 		super()
@@ -45,8 +46,16 @@ class ThreeRotateAnimate extends ThreeAnimate {
 
 	stop(): void {
 		if (this.tween) {
+			delete this.animator.animates[this.id]
 			this.tween = undefined
 			this.dispatchEvent({ type: 'onStop' })
+		}
+	}
+
+	complete() {
+		if (this.tween) {
+			this.stop()
+			this.dispatchEvent({ type: 'onComplete' })
 		}
 	}
 
@@ -99,28 +108,15 @@ class ThreeRotateAnimate extends ThreeAnimate {
 			target.lerpVectors(fromTarget, toTarget, news.t)
 		}
 
-		const stop = () => {
-			controls.enabled = true
-			this.stop()
-		}
-
-		const complete = () => {
-			// Required
-			delete animator.animates[this.id]
-			stop()
-			this.dispatchEvent({ type: 'onComplete' })
-		}
-
 		const { autoStart, duration, easing } = this.options
 
 		const tween = new Tween({ t: 0 }).to({ t: 1 }, duration).easing(easing)
 
-		this.id = tween.getId() + ''
-		this.tween = tween.onUpdate(update).onStop(stop).onComplete(complete)
+		this.animator = animator
+		this.id = this.name + '_' + tween.getId()
+		this.tween = tween.onUpdate(update).onStop(this.stop).onComplete(this.complete)
 
 		if (autoStart) {
-			controls.enabled = false
-
 			this.start()
 		}
 	}

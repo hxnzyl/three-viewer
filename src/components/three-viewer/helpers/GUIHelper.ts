@@ -1,16 +1,16 @@
 import type { GUI, GUIController, GUIParams } from 'dat.gui'
 import { Camera, Mesh } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { ThreeEnvironments } from '../../config/Environments'
-import { ThreePlugin } from '../../core/Plugin'
-import { ThreeEventDispatcherParams } from '../../core/PluginDispatcher'
-import { ThreeViewer } from '../../core/Viewer'
-import { ThreeBackgroundShader } from '../../shaders/BackgroundShader'
-import { AnyObject, BooleanObject } from '../../types'
-import { extend } from '../../utils/extend'
-import { ThreeAxesHelper } from '../AxesHelper'
-import { ThreeGridHelper } from '../GridHelper'
-import { ThreeSkeletonHelper } from '../SkeletonHelper'
+import { ThreeEnvironments } from '../config/Environments'
+import { ThreePlugin } from '../core/Plugin'
+import { ThreeEventDispatcherParams } from '../core/PluginDispatcher'
+import { ThreeViewer } from '../core/Viewer'
+import { ThreeBackgroundShader } from '../shaders/BackgroundShader'
+import { AnyObject, BooleanObject } from '../types'
+import { extend } from '../utils/extend'
+import { ThreeAxesHelper } from './AxesHelper'
+import { ThreeGridHelper } from './GridHelper'
+import { ThreeSkeletonHelper } from './SkeletonHelper'
 import './gui.css'
 
 class ThreeGUIHelper extends ThreePlugin {
@@ -168,6 +168,7 @@ class ThreeGUIHelper extends ThreePlugin {
 		this.domElement = document.createElement('div')
 		this.domElement.id = 'three-gui'
 		this.domElement.appendChild(gui.domElement)
+		this.domElement.addEventListener('mousedown', (event) => event.stopPropagation(), false)
 		viewer.domElement?.appendChild(this.domElement)
 		kiosk && gui.close()
 		this.gui = gui

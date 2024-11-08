@@ -1,8 +1,8 @@
 import { ColorRepresentation, GridHelper, Group } from 'three'
 
-import { ThreePlugin } from '../../core/Plugin'
-import { ThreeViewer } from '../../core/Viewer'
-import { extend } from '../../utils/extend'
+import { ThreePlugin } from '../core/Plugin'
+import { ThreeViewer } from '../core/Viewer'
+import { extend } from '../utils/extend'
 
 class ThreeGridHelper extends ThreePlugin {
 	static Options: ThreeGridHelperOptions = {
@@ -74,4 +74,3 @@ export interface ThreeGridHelperOptions {
 }
 
 export { ThreeGridHelper }
-

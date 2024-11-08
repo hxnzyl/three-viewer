@@ -4,11 +4,11 @@ import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader'
-import { ThreePlugin } from '../../core/Plugin'
-import { ThreeEventDispatcherParams } from '../../core/PluginDispatcher'
-import { ThreeViewer } from '../../core/Viewer'
-import ThreeMaterialUtils from '../../utils/Material'
-import { extend } from '../../utils/extend'
+import { ThreePlugin } from '../core/Plugin'
+import { ThreeEventDispatcherParams } from '../core/PluginDispatcher'
+import { ThreeViewer } from '../core/Viewer'
+import ThreeMaterialUtils from '../utils/Material'
+import { extend } from '../utils/extend'
 
 class ThreeShineEffect extends ThreePlugin {
 	static Options: ThreeShineEffectOptions = {

@@ -1,10 +1,10 @@
 import { AnimationAction, AnimationClip, AnimationMixer, Clock, Vector3 } from 'three'
-import { ThreePlugin } from '../core/Plugin'
-import { ThreeEventDispatcherParams } from '../core/PluginDispatcher'
-import { ThreeViewer } from '../core/Viewer'
 import { AnyObject } from '../types'
 import { extend } from '../utils/extend'
 import { ThreeAnimate } from './Animate'
+import { ThreePlugin } from './Plugin'
+import { ThreeEventDispatcherParams } from './PluginDispatcher'
+import { ThreeViewer } from './Viewer'
 
 class ThreeAnimator extends ThreePlugin {
 	static Options: ThreeAnimatorOptions = {}
@@ -38,7 +38,7 @@ class ThreeAnimator extends ThreePlugin {
 	render() {
 		// update users animates
 		for (const key in this.animates) {
-			this.animates[key].update(this)
+			this.animates[key].update()
 		}
 		// from created to current seconds
 		this.mixer?.update(this.clock.getDelta())
@@ -127,7 +127,7 @@ class ThreeAnimator extends ThreePlugin {
 	playAll(users?: boolean) {
 		if (users) {
 			for (const key in this.animates) {
-				this.animates[key].start(this)
+				this.animates[key].start()
 			}
 		} else if (this.mixer) {
 			this.runningActions = this.clips.map((clip) => (this.mixer?.clipAction(clip).play(), clip.name))
@@ -139,7 +139,7 @@ class ThreeAnimator extends ThreePlugin {
 	pauseAll(users?: boolean) {
 		if (users) {
 			for (const key in this.animates) {
-				this.animates[key].stop(this)
+				this.animates[key].stop()
 			}
 		} else if (this.mixer) {
 			this.mixer.stopAllAction()

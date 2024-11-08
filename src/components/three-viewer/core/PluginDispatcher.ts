@@ -7,14 +7,15 @@ import {
 	Light,
 	Mesh,
 	Skeleton,
-	Texture
+	Texture,
+	Vector3
 } from 'three'
 import { ThreeBackgroundShaderUniforms } from '../shaders/BackgroundShader'
 import { AnyObject } from '../types'
 import { ThreePlugin, ThreePlugins } from './Plugin'
 
 class ThreePluginDispatcher extends EventDispatcher<ThreeEventDispatcherObject> {
-	plugins: ThreePlugins = {}
+	private plugins: ThreePlugins = {}
 
 	getPlugin(name: string) {
 		return this.plugins[name]
@@ -81,6 +82,7 @@ export interface ThreeEventDispatcherParams {
 	error?: any
 	event?: any
 	group?: Group
+	point?: Vector3
 	skeletons?: Skeleton[]
 	texture?: Texture
 	mesh?: Mesh

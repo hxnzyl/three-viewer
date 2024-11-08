@@ -1,8 +1,9 @@
+import { EventDispatcher } from 'three'
 import { AnyObject } from '../types'
-import { ThreeEventDispatcherParams, ThreePluginDispatcher } from './PluginDispatcher'
+import { ThreeEventDispatcherObject, ThreeEventDispatcherParams, ThreePluginDispatcher } from './PluginDispatcher'
 import { ThreeViewer } from './Viewer'
 
-abstract class ThreePlugin {
+abstract class ThreePlugin extends EventDispatcher<ThreeEventDispatcherObject> {
 	viewer?: ThreeViewer
 
 	abstract name: string

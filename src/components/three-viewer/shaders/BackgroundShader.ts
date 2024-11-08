@@ -4,15 +4,15 @@
  */
 
 import { Color, DoubleSide, IUniform, Mesh, PlaneGeometry, RawShaderMaterial, Vector2 } from 'three'
-import { ThreePlugin } from '../../core/Plugin'
-import { ThreeViewer } from '../../core/Viewer'
-import { StringObject } from '../../types'
-import { extend } from '../../utils/extend'
+import { ThreePlugin } from '../core/Plugin'
+import { ThreeViewer } from '../core/Viewer'
+import { StringObject } from '../types'
+import { extend } from '../utils/extend'
 
 // @ts-ignore
 import fragmentShader from './shader.fs'
 // @ts-ignore
-import { ThreeEventDispatcherParams } from '../../core/PluginDispatcher'
+import { ThreeEventDispatcherParams } from '../core/PluginDispatcher'
 import vertexShader from './shader.vs'
 
 class ThreeBackgroundShader extends ThreePlugin {
@@ -137,4 +137,3 @@ export interface ThreeBackgroundShaderOptions extends ThreeBackgroundShaderUnifo
 }
 
 export { ThreeBackgroundShader }
-

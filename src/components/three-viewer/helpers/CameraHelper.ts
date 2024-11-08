@@ -1,8 +1,8 @@
 import { CameraHelper, PerspectiveCamera } from 'three'
 
-import { ThreePlugin } from '../../core/Plugin'
-import { ThreeViewer } from '../../core/Viewer'
-import { extend } from '../../utils/extend'
+import { ThreePlugin } from '../core/Plugin'
+import { ThreeViewer } from '../core/Viewer'
+import { extend } from '../utils/extend'
 
 class ThreeCameraHelper extends ThreePlugin {
 	static Options: ThreeCameraHelperOptions = {}

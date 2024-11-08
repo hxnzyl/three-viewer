@@ -1,21 +1,22 @@
 import { EventDispatcher } from 'three'
-import { ThreeEventDispatcherObject, ThreeEventsObject } from '../core/PluginDispatcher'
 import { AnyObject } from '../types'
 import { ThreeAnimator } from './Animator'
+import { ThreeEventDispatcherObject, ThreeEventsObject } from './PluginDispatcher'
 
 abstract class ThreeAnimate extends EventDispatcher<ThreeEventDispatcherObject> {
-	id!: string
+	id: string = 'Animate_0'
+	name: string = 'Animate'
 	options!: ThreeAnimateOptions
 
 	abstract setOptions(options?: ThreeAnimateOptions): void
 
 	abstract setEvent(): void
 
-	abstract start(animator?: ThreeAnimator): void
+	abstract start(): void
 
-	abstract stop(animator?: ThreeAnimator): void
+	abstract stop(): void
 
-	abstract update(animator?: ThreeAnimator): void
+	abstract update(): void
 
 	abstract reconcile(animator: ThreeAnimator): void
 }

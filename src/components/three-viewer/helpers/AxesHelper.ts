@@ -1,8 +1,8 @@
 import { AxesHelper } from 'three'
-import { ThreePlugin } from '../../core/Plugin'
-import { ThreeViewer } from '../../core/Viewer'
-import ThreeMaterialUtils from '../../utils/Material'
-import { extend } from '../../utils/extend'
+import { ThreePlugin } from '../core/Plugin'
+import { ThreeViewer } from '../core/Viewer'
+import ThreeMaterialUtils from '../utils/Material'
+import { extend } from '../utils/extend'
 
 class ThreeAxesHelper extends ThreePlugin {
 	static Options: ThreeAxesHelperOptions = {

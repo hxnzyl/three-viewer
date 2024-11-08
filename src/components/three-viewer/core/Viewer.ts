@@ -30,12 +30,11 @@ import {
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
-import { ThreeAnimator, ThreeAnimatorOptions } from '../animates/Animator'
-import { ThreeWalkAnimate } from '../animates/Walk'
 import { ThreeEnvironment, ThreeEnvironments } from '../config/Environments'
 import ThreeEventUtils from '../utils/Event'
 import ThreeMaterialUtils from '../utils/Material'
 import { extend } from '../utils/extend'
+import { ThreeAnimator, ThreeAnimatorOptions } from './Animator'
 import { ThreeLighter, ThreeLighterOptions } from './Lighter'
 import { ThreeLoader } from './Loader'
 import { ThreePlugin } from './Plugin'
@@ -132,14 +131,7 @@ class ThreeViewer extends ThreeLoader {
 						break
 					}
 				}
-				this.dispatchPlugin('capture', { mesh })
-				if (!mesh && point) {
-					this.animator.animate(
-						new ThreeWalkAnimate({
-							position: point
-						})
-					)
-				}
+				this.dispatchPlugin('capture', { mesh, point })
 			}
 		})
 
@@ -241,6 +233,9 @@ class ThreeViewer extends ThreeLoader {
 		this.domElement.appendChild(this.renderer.domElement)
 	}
 
+	/**
+	 * 场景控制器
+	 */
 	private setControls() {
 		this.controls = new OrbitControls(this.camera, this.renderer.domElement)
 		this.controls.enabled = true

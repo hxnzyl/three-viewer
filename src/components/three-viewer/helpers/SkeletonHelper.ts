@@ -1,10 +1,10 @@
 import { Group, LineBasicMaterial, SkeletonHelper } from 'three'
 
-import { ThreePlugin } from '../../core/Plugin'
-import { ThreeViewer } from '../../core/Viewer'
-import { AnyObject } from '../../types'
-import ThreeMaterialUtils from '../../utils/Material'
-import { extend } from '../../utils/extend'
+import { ThreePlugin } from '../core/Plugin'
+import { ThreeViewer } from '../core/Viewer'
+import { AnyObject } from '../types'
+import ThreeMaterialUtils from '../utils/Material'
+import { extend } from '../utils/extend'
 
 class ThreeSkeletonHelper extends ThreePlugin {
 	static Options: ThreeSkeletonHelperOptions = {

@@ -2,19 +2,18 @@ import {
 	ColorRepresentation,
 	Mesh,
 	MeshToonMaterial,
-	Object3D,
-	Scene,
+	Quaternion,
 	TetrahedronGeometry,
 	TorusGeometry,
 	Vector3
 } from 'three'
 import { Easing } from 'three/examples/jsm/libs/tween.module'
-import { extend } from '../../utils/extend'
-import { ThreeAnimate, ThreeAnimateOptions } from '../Animate'
-import { ThreeAnimator } from '../Animator'
+import { ThreeAnimate, ThreeAnimateOptions } from '../core/Animate'
+import { ThreeAnimator } from '../core/Animator'
+import { extend } from '../utils/extend'
 
-class ThreeWalkAnimate extends ThreeAnimate {
-	static Options: ThreeWalkAnimateOptions = {
+class ThreeActionAnimate extends ThreeAnimate {
+	static Options: ThreeActionAnimateOptions = {
 		autoStart: true,
 		duration: 1000,
 		speed: 0.2,
@@ -23,26 +22,25 @@ class ThreeWalkAnimate extends ThreeAnimate {
 	}
 
 	name = 'Animates.Walk'
-	options = {} as Required<ThreeWalkAnimateOptions>
-	object?: Object3D
-	scene!: Scene
+	options = {} as Required<ThreeActionAnimateOptions>
 	moving = false
+	animator!: ThreeAnimator
 	characterSize = 1
 	indicatorTop!: Mesh
 	indicatorBottom!: Mesh
+	toQuaternion!: Quaternion
 
-	constructor(options?: ThreeWalkAnimateOptions) {
+	constructor(options?: ThreeActionAnimateOptions) {
 		super()
 		this.setOptions(options)
 		this.setEvent()
 	}
 
-	setOptions(options?: ThreeWalkAnimateOptions) {
-		this.options = extend(true, {}, ThreeWalkAnimate.Options, options || {})
+	setOptions(options?: ThreeActionAnimateOptions) {
+		this.options = extend(true, {}, ThreeActionAnimate.Options, options || {})
 	}
 
 	setEvent() {
-		// 添加参数中的事件
 		const { events } = this.options
 		for (const type in events) {
 			this.addEventListener(type, events[type])
@@ -50,16 +48,14 @@ class ThreeWalkAnimate extends ThreeAnimate {
 	}
 
 	reconcile(animator: ThreeAnimator) {
-		const { object, scene } = animator.viewer
-		const { autoStart } = this.options
-		this.scene = scene
-		this.object = object
+		this.animator = animator
 		this.indicator()
-		autoStart && this.start(animator)
+		this.start()
 	}
 
 	indicator() {
 		if (this.indicatorTop) return
+
 		// Create the top indicator.
 		const topSize = this.characterSize / 8
 		const topGeometry = new TetrahedronGeometry(topSize, 0)
@@ -69,6 +65,7 @@ class ThreeWalkAnimate extends ThreeAnimate {
 		this.indicatorTop.rotation.x = -0.97
 		this.indicatorTop.rotation.y = Math.PI / 4
 		this.indicatorTop.name = 'ThreeViewer_Indicator_Top'
+
 		// Create the bottom indicator.
 		const bottomRadius = this.characterSize / 4
 		const bottomGeometry = new TorusGeometry(bottomRadius, bottomRadius * 0.25, 2, 12)
@@ -79,62 +76,66 @@ class ThreeWalkAnimate extends ThreeAnimate {
 		this.indicatorBottom.name = 'ThreeViewer_Indicator_Bottom'
 	}
 
-	start(animator?: ThreeAnimator): void {
-		if (!this.object) return
+	start(): void {
+		const { object, scene } = this.animator.viewer
+		if (!object) return
 
-		const { position, quaternion } = this.object
+		const { position, quaternion } = object
 		const { position: toPosition } = this.options
 
-		// 旋转模型到目标点的方向(指定目标点相对于当前目标点的相对角度)
+		// 旋转模型到目标点的方向（指定目标点相对于当前目标点的相对角度）
 		const direction = new Vector3().subVectors(toPosition, position).normalize()
-		// 使用Quaternion来设置模型的朝向
-		quaternion.setFromUnitVectors(new Vector3(0, 0, 1), direction)
 
+		// 使用 Quaternion 来设置模型的朝向
+		this.toQuaternion = new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), direction)
+
+		// 停止所有用户动画，注意：会回调到this.stop()
+		this.animator.pauseAll(true)
+
+		// 加入路标上
 		const top = this.indicatorTop.position
 		top.x = toPosition.x
 		top.z = toPosition.z
-		this.scene.add(this.indicatorTop)
+		scene.add(this.indicatorTop)
 
+		// 加入路标圈
 		const bottom = this.indicatorBottom.position
 		bottom.x = toPosition.x
 		bottom.z = toPosition.z
-		this.scene.add(this.indicatorBottom)
+		scene.add(this.indicatorBottom)
 
-		if (animator) {
-			// 停止所有用户动画
-			animator.pauseAll(true)
-			// 开始奔跑或走
-			const fromX = position.x
-			const fromZ = position.z
-			const toX = toPosition.x
-			const toZ = toPosition.z
-			const diffX = Math.abs(fromX - toX)
-			const diffZ = Math.abs(fromZ - toZ)
-			const distance = Math.sqrt(diffX * diffX + diffZ * diffZ)
-			if (distance > 10) {
-				animator.play('Running', 1)
-			} else {
-				animator.play('Walking', 2)
-			}
+		// 开始奔跑或走
+		const fromX = position.x
+		const fromZ = position.z
+		const toX = toPosition.x
+		const toZ = toPosition.z
+		const diffX = Math.abs(fromX - toX)
+		const diffZ = Math.abs(fromZ - toZ)
+		const distance = Math.sqrt(diffX * diffX + diffZ * diffZ)
+		if (distance > 10) {
+			this.animator.play('Running', 1)
+		} else {
+			this.animator.play('Walking', 2)
 		}
 
 		this.moving = true
 	}
 
-	stop(animator?: ThreeAnimator): void {
+	stop(): void {
 		if (this.moving) {
-			animator?.pauseAll().play('Idle', 2)
-			this.scene.remove(this.indicatorTop)
-			this.scene.remove(this.indicatorBottom)
+			const { scene } = this.animator.viewer
+			this.animator.pauseAll().play('Idle', 2)
+			delete this.animator.animates[this.id]
+			scene.remove(this.indicatorTop)
+			scene.remove(this.indicatorBottom)
 			this.moving = false
-			this.object = undefined
 		}
 	}
 
-	update(animator?: ThreeAnimator) {
-		if (!this.object || !this.moving) return
+	update() {
+		if (!this.moving) return
 
-		const { position } = this.object
+		const { position, quaternion } = this.animator.viewer.object!
 		const { position: toPosition, speed } = this.options
 		const indicator = this.indicatorTop.position
 
@@ -157,19 +158,22 @@ class ThreeWalkAnimate extends ThreeAnimate {
 		// Update indicator
 		indicator.y = indicator.y > 0.1 ? indicator.y - 0.01 : 0.5
 
+		// Smooth steering
+		quaternion.rotateTowards(this.toQuaternion, speed)
+
 		// Move Complete
 		position.x <= toX + speed &&
 			position.x >= toX - speed &&
 			position.z <= toZ + speed &&
 			position.z >= toZ - speed &&
-			this.stop(animator)
+			this.stop()
 	}
 }
 
-export interface ThreeWalkAnimateOptions extends ThreeAnimateOptions {
+export interface ThreeActionAnimateOptions extends ThreeAnimateOptions {
 	position?: Vector3
 	speed?: number
 	indicatorColor?: ColorRepresentation
 }
 
-export { ThreeWalkAnimate }
+export { ThreeActionAnimate }

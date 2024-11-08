@@ -1,6 +1,7 @@
 'use client'
 
 import ThreeViewer from '@/components/three-viewer'
+import { ThreeActionControls } from '@/components/three-viewer/controls/ActionControls'
 import { ThreeViewerOptions } from '@/components/three-viewer/core/Viewer'
 import { ThreeShineEffect } from '@/components/three-viewer/effects/ShineEffect'
 import { ThreeAxesHelper } from '@/components/three-viewer/helpers/AxesHelper'
@@ -17,7 +18,8 @@ export default function HomePage() {
 			new ThreeViewCubeHelper(),
 			new ThreeGUIHelper(),
 			new ThreeShineEffect(),
-			new ThreeBackgroundShader()
+			new ThreeBackgroundShader(),
+			new ThreeActionControls()
 		]
 	}
 

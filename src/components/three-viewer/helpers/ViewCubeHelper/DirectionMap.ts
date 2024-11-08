@@ -1,4 +1,4 @@
-import { ThreeRotateIdAnimate } from '@/components/three-viewer/animates/Rotate/Map'
+import { ThreeRotateIdAnimate } from '@/components/three-viewer/animates/RotateAnimateMap'
 
 export const ThreeViewCubeDirectionMap: { [key: string]: ThreeRotateIdAnimate } = {
 	// 6 faces
