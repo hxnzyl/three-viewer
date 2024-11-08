@@ -116,7 +116,7 @@ class ThreeViewer extends ThreeLoader {
 	}
 
 	private setEvent() {
-		ThreeEventUtils.addMouseEventListener({
+		ThreeEventUtils.addMouse({
 			viewer: this,
 			dom: this.domElement,
 			// 点击模型捕获

@@ -26,7 +26,7 @@ class ThreeViewCubeEditorHelper {
 		this.viewer = viewer
 		this.raycaster = new Raycaster()
 		this.walkAnimate = new ThreeRotateAnimate()
-		ThreeEventUtils.addMouseEventListener({
+		ThreeEventUtils.addMouse({
 			viewer,
 			dom: domElement,
 			stop: true,

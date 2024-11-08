@@ -80,7 +80,7 @@ class ThreeActionAnimate extends ThreeAnimate {
 		const { object, scene } = this.animator.viewer
 		if (!object) return
 
-		const { position, quaternion } = object
+		const { position } = object
 		const { position: toPosition } = this.options
 
 		// 旋转模型到目标点的方向（指定目标点相对于当前目标点的相对角度）
