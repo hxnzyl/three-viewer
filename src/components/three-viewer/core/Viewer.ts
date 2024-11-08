@@ -247,12 +247,20 @@ class ThreeViewer extends ThreeLoader {
 		// this.controls = new TrackballControls(this.camera, this.renderer.domElement)
 		// this.controls.rotateSpeed = 3
 		// this.controls.autoRotate = false
-		// this.controls.screenSpacePanning = true
+		this.controls.screenSpacePanning = true
 		// up
 		// this.controls.minPolarAngle = 0
 		// down
 		// this.controls.maxPolarAngle = Math.PI
 		this.listener.push(this.controls, 'change', this.activateBinded, 'controls-change')
+	}
+
+	lockControls() {
+		this.controls.enabled = false
+	}
+
+	unlockContrls() {
+		this.controls.enabled = true
 	}
 
 	private setScene() {
@@ -441,19 +449,19 @@ class ThreeViewer extends ThreeLoader {
 	}
 
 	updateObject() {
-		if (this.object) {
-			this.objectBox3 = new Box3().setFromObject(this.object)
-			this.objectCenter = this.objectBox3.getCenter(new Vector3())
-			this.objectSize = this.objectBox3.getSize(new Vector3())
-			this.objectDistance = Math.max(this.objectSize.x, this.objectSize.y, this.objectSize.z) * 3
-			const { position } = this.options
-			if (position) {
-				this.camera.position.fromArray(position)
-				this.camera.lookAt(new Vector3())
-			} else {
-				this.camera.position.set(this.objectCenter.x, this.objectCenter.y, this.objectCenter.z + this.objectDistance)
-				this.camera.lookAt(this.objectCenter)
-			}
+		if (!this.object) return
+		this.objectBox3 = new Box3().setFromObject(this.object)
+		this.objectCenter = this.objectBox3.getCenter(new Vector3())
+		this.objectSize = this.objectBox3.getSize(new Vector3())
+		this.objectDistance = Math.max(this.objectSize.x, this.objectSize.y, this.objectSize.z) * 3
+		const { position } = this.options
+		if (position) {
+			this.camera.position.fromArray(position)
+			this.camera.lookAt(new Vector3())
+		} else {
+			// Look at world center
+			this.camera.position.set(this.objectCenter.x, this.objectCenter.y, this.objectCenter.z + this.objectDistance)
+			this.camera.lookAt(this.objectCenter)
 		}
 	}
 

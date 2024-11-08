@@ -57,8 +57,6 @@ class ThreeRotateAnimate extends ThreeAnimate {
 	reconcile(animator: ThreeAnimator) {
 		let { rotateId, position: toPosition, up: toUp } = this.options
 
-		animator.viewer.updateObject()
-
 		const { camera, controls, objectCenter, objectDistance } = animator.viewer
 		const { position, up } = camera
 		const { target } = controls

@@ -1,12 +1,12 @@
 import {
-    ColorRepresentation,
-    Mesh,
-    MeshToonMaterial,
-    Object3D,
-    Scene,
-    TetrahedronGeometry,
-    TorusGeometry,
-    Vector3
+	ColorRepresentation,
+	Mesh,
+	MeshToonMaterial,
+	Object3D,
+	Scene,
+	TetrahedronGeometry,
+	TorusGeometry,
+	Vector3
 } from 'three'
 import { Easing } from 'three/examples/jsm/libs/tween.module'
 import { extend } from '../../utils/extend'
@@ -68,7 +68,7 @@ class ThreeWalkAnimate extends ThreeAnimate {
 		this.indicatorTop.position.y = 0.05 // Flat surface so hardcode Y position for now.
 		this.indicatorTop.rotation.x = -0.97
 		this.indicatorTop.rotation.y = Math.PI / 4
-		this.indicatorTop.name = 'ThreeView_Indicator_Top'
+		this.indicatorTop.name = 'ThreeViewer_Indicator_Top'
 		// Create the bottom indicator.
 		const bottomRadius = this.characterSize / 4
 		const bottomGeometry = new TorusGeometry(bottomRadius, bottomRadius * 0.25, 2, 12)
@@ -76,7 +76,7 @@ class ThreeWalkAnimate extends ThreeAnimate {
 		this.indicatorBottom = new Mesh(bottomGeometry, bottomMaterial)
 		this.indicatorBottom.position.y = 0.025
 		this.indicatorBottom.rotation.x = -Math.PI / 2
-		this.indicatorBottom.name = 'ThreeView_Indicator_Bottom'
+		this.indicatorBottom.name = 'ThreeViewer_Indicator_Bottom'
 	}
 
 	start(animator?: ThreeAnimator): void {
@@ -173,4 +173,3 @@ export interface ThreeWalkAnimateOptions extends ThreeAnimateOptions {
 }
 
 export { ThreeWalkAnimate }
-
